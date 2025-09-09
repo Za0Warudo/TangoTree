@@ -416,47 +416,44 @@ Node<T>* RemoveRec(Node<T>* h, T key) {
 /* Split & Join functions */
 
 /**
- * @brief Given two trees t1, t2 where every key in t1 is smaller than every key in t2. Returns a union tree of t1 and t2.
+ * @brief Given two trees t1, t2 and a node x, where for every key in each tree is valid in t1 < x < t2.
+ * Returns a union tree of t1, t2 and x.
  * @param t1 root node of the first tree
+ * @param x node where t1 < x < t2
  * @param t2 root node of the second tree
  * @return the union tree
  */
 template <typename T>
-Node<T>* Join(Node<T>* t1, Node<T>* t2) {
-    Node<T>* newRoot = JoinRec(t1, t2);
-    if (!IsEmpty(newRoot)) newRoot->color = BLACK;
-    return newRoot;
+Node<T>* Join(Node<T>* t1, Node<T>* x, Node<T>* t2) {
+    Node<T>* root = JoinRec(t1, x,  t2);
+    if (!IsEmpty(root)) root->color = BLACK;
+    return root;
 }
-
 
 /**
  * @internal
  * @brief Recursive method to join two trees.
  * @param t1 node of the first tree
+ * @param x node where t1 < x < t2
  * @param t2 node of the second tree
  * @return the union subtree
  */
 template <typename T>
-Node<T>* JoinRec(Node<T>* t1, Node<T>* t2) {
-    if (!t1) return t2;
-    if (!t2) return t1;
+Node<T>* JoinRec(Node<T>* t1, Node<T>* x, Node<T>* t2) {
+    if (!t1 && !t2) return x;
 
     if (Height(t1) < Height(t2)) {
-        t2->left = JoinRec(t1, t2->left);
+        t2->left = JoinRec(t1, x, t2->left);
         return Balance(t2);
     }
     if (Height(t1) > Height(t2)) {
-        t1->right = JoinRec(t1->right, t2);
+        t1->right = JoinRec(t1->right, x,  t2);
         return Balance(t1);
     }
-    Node<T>* min = Min(t2);
-    Node<T>* newRoot = new Node<T>(min->data);
-    newRoot->color = RED;
-    t2 = RemoveMin(t2);
-    newRoot->left = t1;
-    newRoot->right = t2;
-    if (Height(t2) < Height(t1)) newRoot->left->color = RED;
-    return Balance(newRoot);
+    x->color = RED;
+    x->left = t1;
+    x->right = t2;
+    return Balance(x);
 }
 
 /* Show functions */

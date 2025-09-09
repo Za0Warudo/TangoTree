@@ -29,8 +29,7 @@ int main () {
                 break;
             case 2:
                 std::cin >> id >> val;
-                if (tree_map.contains(id)) std::cout << (Contains(tree_map[id], val)? "True" : "False") << std::endl;
-                else std::cout << "Invalid ID" << std::endl;
+                std::cout << (Contains(tree_map.contains(id)? tree_map[id] : nullptr, val)? "True" : "False") << std::endl;
                 break;
             case 3:
                 std::cin >> id >> val;
@@ -40,15 +39,16 @@ int main () {
                 }
                 else std::cout << "Invalid ID" << std::endl;
                 break;
-            case 4:
-                int id1, id2; std::cin >> id1 >> id2;
-                if (tree_map.contains(id1) && tree_map.contains(id2)) {
-                    Node<int>* joinedTree = Join(tree_map[id1], tree_map[id2]);
-                    Show(joinedTree);
-                    assert(IsBalanced(joinedTree));
-                }
-                else std::cout << "Invalid ID" << std::endl;
+            case 4: {
+                int id1, id2; std::cin >> id1 >> val >> id2;
+                Node<int>* joinedTree = Join(
+                                            tree_map.contains(id)? tree_map[id1] : nullptr,
+                                            new Node<int>(val),
+                                            tree_map.contains(id)? tree_map[id2] : nullptr);
+                Show(joinedTree);
+                assert(IsBalanced(joinedTree));
                 break;
+            }
             case 5:
                 std::cin >> id;
                 Show(tree_map[id]);

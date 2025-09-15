@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <cassert>
 #include <iostream>
+#include <queue>
 #include <tuple>
 #include <bits/ostream.tcc>
 
@@ -34,7 +35,7 @@ enum NodeType {
 template <typename T>
 struct Node {
     T data;                             // Node's data and key
-    Node *left, *right;                 // Left & Right children
+    Node<T> *left, *right;              // Left & Right children
     int size;                           // Node subtree size
     int height;                         // Node black height
     Color color;                        // Parent link color
@@ -43,15 +44,25 @@ struct Node {
     /**
      * @brief Build a new node.
      * @param data information to be saved in the node
-     * @param t Node's type, default is regular
+     * @param c Node's colors, default is RED
+     * @param t Node's type, default is REGULAR
      */
-    explicit Node(T data, const NodeType t = REGULAR): data(data), left(nullptr), right(nullptr), size(1), height(0), color(RED), type(t) {}
+    explicit Node(T data, const Color c = RED,  const NodeType t = REGULAR):
+    data(data), left(nullptr), right(nullptr), size(1), height(0), color(c), type(t) {}
 };
 
-/*
+/**
+ * @brief The dummy node (works like null)
+ */
 template <typename T>
-Node<T>* dummy = new Node<T>(T(), DUMMY);
-*/
+Node<T>* dummy = new Node<T>(T(), BLACK, DUMMY);
+
+/**
+ * @brief Returns the dummy node
+ *
+ */
+template <typename T>
+Node<T>* GetDummy() { return dummy<T>; }
 
 /* Constructor */
 
@@ -60,9 +71,30 @@ Node<T>* dummy = new Node<T>(T(), DUMMY);
  * @return the representation of an empty BST
  */
 template <typename T>
-Node<T>* Initialize() { return nullptr; }
+Node<T>* Initialize() { return GetDummy<T>(); }
+
+/**
+ * @brief Initializes a new node.
+ * @param data the data to be stored in the node
+ * @return the node
+ */
+template <typename T>
+Node<T>* MakeNode(T data) {
+    Node<T>* n = new Node<T>(data);
+    n->left = GetDummy<T>();
+    n->right = GetDummy<T>();
+    return n;
+}
 
 /* Helpers functions */
+
+/**
+ * @brief Returns @c true if the x node is the dummy node, @c false otherwise
+ * @param x the node
+ * @return @c true or @c false
+ */
+template <typename T>
+bool IsDummy(Node<T>* x) {return x->type == DUMMY; }
 
 /**
  * @brief Returns @c true if the tree is empty, @c false otherwise.
@@ -70,7 +102,7 @@ Node<T>* Initialize() { return nullptr; }
  * @return @c true or @c false
  */
 template <typename T>
-bool IsEmpty(Node<T>* t) { return t == nullptr; }
+bool IsEmpty(Node<T>* t) { return IsDummy(t); }
 
 /**
  * @brief Get x node size if exists, 0 otherwise.
@@ -78,15 +110,15 @@ bool IsEmpty(Node<T>* t) { return t == nullptr; }
  * @return tree size
  */
 template <typename T>
-int Size(Node<T>* x) { return x? x->size: 0; }
+int Size(Node<T>* x) { return !IsDummy(x)? x->size: 0; }
 
 /**
- * @brief Get x node height if exists, -1 otherwise.
+ * @brief Get x node black height if exists, -1 otherwise.
  * @param x the node
  * @return tree height
  */
 template <typename T>
-int Height(Node<T>* x) { return x? x->height: -1; }
+int Height(Node<T>* x) { return !IsDummy(x)? x->height: -1; }
 
 /**
  * @internal
@@ -95,7 +127,7 @@ int Height(Node<T>* x) { return x? x->height: -1; }
  * @return @c true or @c false
  */
 template <typename T>
-bool IsRedLink(Node<T>* x) { return x? x->color == RED : false; }
+bool IsRedLink(Node<T>* x) { return !IsDummy(x)? x->color == RED : false; }
 
 /**
  * @internal
@@ -104,17 +136,17 @@ bool IsRedLink(Node<T>* x) { return x? x->color == RED : false; }
  */
 template <typename T>
 void UpdateSize(Node<T>* x) {
-    if (x) x->size = Size(x->left) + Size(x->right) + 1;
+    if (!IsDummy(x)) x->size = Size(x->left) + Size(x->right) + 1;
 }
 
 /**
  * @internal
- * @brief Updates height variable of node x.
+ * @brief Updates black height variable of node x.
  * @param x the node
  */
 template <typename T>
 void UpdateHeight(Node<T>* x) {
-    if (x) x->height = std::max(Height(x->left) + IsRedLink(x->left)? 0 : 1, x->right? Height(x->right) + 1 : 0);
+    if (!IsDummy(x)) x->height = std::max(Height(x->left) + IsRedLink(x->left)? 0 : 1, !IsDummy(x->right)? Height(x->right) + 1 : 0);
 }
 
 /**
@@ -124,8 +156,8 @@ void UpdateHeight(Node<T>* x) {
  */
 template <typename T>
 void Detach(Node<T>* x) {
-    if (x) {
-        x->left = nullptr; x->right = nullptr;
+    if (!IsDummy(x)) {
+        x->left = GetDummy<T>(); x->right = GetDummy<T>();
         UpdateHeight(x); UpdateSize(x);
     }
 }
@@ -140,7 +172,7 @@ void Detach(Node<T>* x) {
  */
 template <typename T>
 Node<T>* RotateRight(Node<T>* h) {
-    assert(h && IsRedLink(h->left) && !IsRedLink(h->right)); // conditions to do the right rotation
+    assert(!IsDummy(h) && IsRedLink(h->left) && !IsRedLink(h->right)); // conditions to do the right rotation
 
     Node<T>* y = h->left;
     h->left = y->right;
@@ -164,7 +196,7 @@ Node<T>* RotateRight(Node<T>* h) {
  */
 template <typename T>
 Node<T>* RotateLeft(Node<T>* h) {
-    assert(h && IsRedLink(h->right) && !IsRedLink(h->left)); // conditions to do the right rotation
+    assert(!IsDummy(h) && IsRedLink(h->right) && !IsRedLink(h->left)); // conditions to do the right rotation
 
     Node<T>* y = h->right;
     h->right = y->left;
@@ -188,7 +220,7 @@ Node<T>* RotateLeft(Node<T>* h) {
  */
 template <typename T>
 Node<T>* MoveRedLeft (Node<T>* h) {
-    assert(h && IsRedLink(h) && !IsRedLink(h->left) && !IsRedLink(h->left->left)); // conditions to do the operation
+    assert(!IsDummy(h) && IsRedLink(h) && !IsRedLink(h->left) && !IsRedLink(h->left->left)); // conditions to do the operation
 
     FlipColors(h);
     if (IsRedLink(h->right->left)) {
@@ -207,7 +239,7 @@ Node<T>* MoveRedLeft (Node<T>* h) {
  */
 template <typename T>
 Node<T>* MoveRedRight (Node<T>* h) {
-    assert(h && IsRedLink(h) && !IsRedLink(h->right) && !IsRedLink(h->right->left)); // conditions to do the operation
+    assert(!IsDummy(h) && IsRedLink(h) && !IsRedLink(h->right) && !IsRedLink(h->right->left)); // conditions to do the operation
 
     FlipColors(h);
     if (IsRedLink(h->left->left)) {
@@ -226,7 +258,7 @@ template <typename T>
 void FlipColors(Node<T>* h) {
 
     // conditions to make the flip
-    assert(h && h->left && h->right);
+    assert(!IsDummy(h) && !IsDummy(h->left) && !IsDummy(h->right));
     assert(
     IsRedLink(h->left) && IsRedLink(h->right) && !IsRedLink(h) ||
     !IsRedLink(h->left) && !IsRedLink(h->right) && IsRedLink(h)
@@ -246,15 +278,14 @@ void FlipColors(Node<T>* h) {
  */
 template<typename T>
 Node<T>* Balance(Node<T>* x) {
-    if (!x) return nullptr;
+    if (!IsDummy(x)) {
+        if (!IsRedLink(x->left) && IsRedLink(x->right)) x = RotateLeft(x);
+        if (IsRedLink(x->left) && IsRedLink((x->left)->left)) x = RotateRight(x);
+        if (IsRedLink(x->left) && IsRedLink(x->right)) FlipColors(x);
 
-    if (!IsRedLink(x->left) && IsRedLink(x->right)) x = RotateLeft(x);
-    if (IsRedLink(x->left) && IsRedLink((x->left)->left)) x = RotateRight(x);
-    if (IsRedLink(x->left) && IsRedLink(x->right)) FlipColors(x);
-
-    UpdateSize(x);
-    UpdateHeight(x);
-
+        UpdateSize(x);
+        UpdateHeight(x);
+    }
     return x;
 }
 
@@ -269,7 +300,8 @@ Node<T>* Balance(Node<T>* x) {
 template <typename T>
 Node<T>* Insert(Node<T>* h, T data) {
     h = InsertRec(h, data);
-    if (h) h->color = BLACK;
+    if (!IsDummy(h)) h->color = BLACK;
+    assert(Check(h));
     return h;
 }
 
@@ -282,7 +314,7 @@ Node<T>* Insert(Node<T>* h, T data) {
  */
 template <typename T>
 Node<T>* InsertRec(Node<T>* h, T data) {
-    if (!h) return new Node<T>(data);
+    if (IsDummy(h)) return MakeNode(data);
 
     if (data < h->data) h->left = InsertRec(h->left, data);
     else if (data > h->data) h->right = InsertRec(h->right, data);
@@ -300,7 +332,7 @@ Node<T>* InsertRec(Node<T>* h, T data) {
  * @return @c true or @c false.
  */
 template <typename T>
-bool Contains(Node<T>* h, T data) { return Search(h, data) != nullptr; }
+bool Contains(Node<T>* h, T data) { return !IsDummy(Search(h, data)); }
 
 /**
  * @brief Find node containing the given data, @c nullptr otherwise.
@@ -310,9 +342,10 @@ bool Contains(Node<T>* h, T data) { return Search(h, data) != nullptr; }
  */
 template <typename T>
 Node<T>* Search(Node<T>* h, T data) {
-    if (!h) return nullptr;
-    if (data < h->data) return Search(h->left, data);
-    if (data > h->data) return Search(h->right, data);
+    if (!IsDummy(h)) {
+        if (data < h->data) return Search(h->left, data);
+        if (data > h->data) return Search(h->right, data);
+    }
     return h;
 }
 
@@ -325,7 +358,7 @@ Node<T>* Search(Node<T>* h, T data) {
 template <typename T>
 Node<T>* Min(Node<T>* t) {
     if (IsEmpty(t)) throw std::runtime_error("Min in an empty");
-    while (t->left) t = t->left;
+    while (!IsDummy(t->left)) t = t->left;
     return t;
 }
 
@@ -338,8 +371,34 @@ Node<T>* Min(Node<T>* t) {
 template <typename T>
 Node<T>* Max(Node<T>* t) {
     if (IsEmpty(t)) throw std::runtime_error("Min in an empty");
-    while (t->right) t = t->right;
+    while (!IsDummy(t->right)) t = t->right;
     return t;
+}
+
+/**
+ * @internal
+ * @brief return all data in the tree
+ * @param r the tree root
+ * @param q the queue to be store the keys
+ */
+template <typename T>
+void GetAllKeys(Node<T>* r, std::queue<T> q) {
+    if (!IsDummy(r)) GetAllKeysRec(r, q);
+}
+
+/**
+ * @internal
+ * @brief Recursive method to get all key in the tree
+ * @param h the subtree root
+ * @param q the queue to be store the keys
+ */
+template <typename T>
+void GetAllKeysRec(Node<T>* h, std::queue<T> q) {
+    if (!IsDummy(h)) {
+        GetAllKeysRec(h->left, q);
+        q.push(h->data);
+        GetAllKeysRec(h->right, q);
+    }
 }
 
 /* Remove functions */
@@ -358,6 +417,9 @@ Node<T>* RemoveMin(Node<T>* t) {
 
     t = RemoveMinRec(t);
     if (!IsEmpty(t)) t->color = BLACK;
+
+    assert(Check(t));
+
     return t;
 }
 
@@ -369,7 +431,7 @@ Node<T>* RemoveMin(Node<T>* t) {
  */
 template <typename T>
 Node<T>* RemoveMinRec(Node<T>* h) {
-    if (!h->left) return nullptr;
+    if (IsDummy(h->left)) return h->left;
 
     if (!IsRedLink(h->left) && !IsRedLink(h->left->left)) h = MoveRedLeft(h);
     h->left = RemoveMinRec(h->left);
@@ -390,6 +452,9 @@ Node<T>* RemoveMax(Node<T>* t) {
 
     t = RemoveMaxRec(t);
     if (!IsEmpty(t)) t->color = BLACK;
+
+    assert(Check(t));
+
     return t;
 }
 
@@ -402,7 +467,7 @@ template <typename T>
 Node<T>* RemoveMaxRec(Node<T>* h) {
     if (IsRedLink(h->left)) h = RotateRight(h);
 
-    if (!h->right) return nullptr;
+    if (IsDummy(h->right)) return h->right;
 
     if (!IsRedLink(h->right) && !IsRedLink(h->right->left)) h = MoveRedRight(h);
 
@@ -425,6 +490,9 @@ Node<T>* Remove(Node<T>* h, T key) {
 
     h = RemoveRec(h, key);
     if (!IsEmpty(h)) h->color = BLACK;
+
+    assert(Check(h));
+
     return h;
 }
 
@@ -443,7 +511,7 @@ Node<T>* RemoveRec(Node<T>* h, T key) {
     }
     else {
         if (IsRedLink(h->left)) h = RotateRight(h);
-        if (key == h->data && !h->right) return nullptr;
+        if (key == h->data && IsDummy(h->right)) return h->right;
         if (!IsRedLink(h->right) && !IsRedLink(h->right->left) ) h = MoveRedRight(h);
         if (key == h->data) {
             Node<T>* x = Min(h->right);
@@ -467,12 +535,34 @@ Node<T>* RemoveRec(Node<T>* h, T key) {
  */
 template <typename T>
 Node<T>* Join(Node<T>* t1, Node<T>* x, Node<T>* t2) {
-    if (!t1 && !t2) return x;
-    if (!t1) return Insert(t2, x->data);
-    if (!t2) return Insert(t1, x->data);
+
+    // Save all keys for later check
+    std::queue<T> qbefore = std::queue<T>();
+    std::queue<T> qafter = std::queue<T>();
+
+    GetAllKeys(t1, qbefore);
+    GetAllKeys(x, qbefore);
+    GetAllKeys(t2, qbefore);
+
+
+    if (IsDummy(t1) && IsDummy(t2)) return x;
+    if (IsDummy(t1)) return Insert(t2, x->data);
+    if (IsDummy(t2)) return Insert(t1, x->data);
 
     Node<T>* root = JoinRec(t1, x,  t2);
     if (!IsEmpty(root)) root->color = BLACK; // root is always a black link condition
+
+    GetAllKeys(root, qafter);
+
+    // Checks if join is correct
+    assert(Check(root));
+    while (!qbefore.empty()) {
+        assert(qbefore.front() == qafter.front());
+        qbefore.pop(); qafter.pop();
+    }
+
+    assert(qafter.empty());
+
     return root;
 }
 
@@ -486,7 +576,6 @@ Node<T>* Join(Node<T>* t1, Node<T>* x, Node<T>* t2) {
  */
 template <typename T>
 Node<T>* JoinRec(Node<T>* t1, Node<T>* x, Node<T>* t2) {
-
     if (Height(t1) < Height(t2)) {
         t2->left = JoinRec(t1, x, t2->left);
         return Balance(t2);
@@ -522,6 +611,11 @@ std::tuple<Node<T>*, Node<T>*, Node<T>*> Split(Node<T>* y, T k) {
     if (R) R->color = BLACK;
 
     x->color = BLACK;
+
+    // Checks if the split is correct
+    assert(Check(L) && Check(x) && Check(R));
+    assert(IsDummy(L) || (!IsDummy(L) && Max(L)->data < x->data));
+    assert(IsDummy(R) || (!IsDummy(R) && Min(R)->data > x->data));
 
     return std::make_tuple(L, x, R);
 }
@@ -564,7 +658,7 @@ std::tuple<Node<T>*, Node<T>*, Node<T>*> SplitRec(Node<T>* h, T k) {
  */
 template <typename T>
 void Show(Node<T>* t) {
-    if (!t) return;
+    if (IsDummy(t)) return;
     Show(t, 0);
 }
 
@@ -576,13 +670,41 @@ void Show(Node<T>* t) {
  */
 template <typename T>
 void Show(Node<T>* t, const int s) {
-    if (!t) return;
+    if (IsDummy(t)) return;
     Show(t->left, s + 3);
     std::cout << std::string(s, ' ') << "(" << t->data << ", " << (t->color == RED? "RED" : "BLACK") << ")" << std::endl;
     Show(t->right, s + 3);
 }
 
 /* Check function */
+
+/**
+ * @internal
+ * @brief Check if the tree is a BST
+ * @param t the tree root node
+ * @return @c true or @c false
+ */
+template <typename T>
+bool IsBST(Node<T>* t) {
+    if (IsEmpty(t)) return true;
+    return IsBSTRec(t, GetDummy<T>(), GetDummy<T>());
+}
+
+/**
+ * @internal
+ * @brief Recursive method to check if the subtree h is a BST
+ * @param h the subtree root node
+ * @param minNode the node with min key find so far
+ * @param maxNode the node with max key find so far
+ * @return @c true or @c false
+ */
+template <typename T>
+bool IsBSTRec(Node<T>* h, Node<T>* minNode, Node<T>* maxNode) {
+    if (IsDummy(h)) return true;
+    if (!IsDummy(minNode) && h->data < minNode->data) return false;
+    if (!IsDummy(maxNode) && h->data > maxNode->data) return false;
+    return IsBSTRec(h->left, minNode, h) && IsBSTRec(h->right, h, maxNode);
+}
 
 /**
  * @internal
@@ -594,7 +716,7 @@ template <typename T>
 bool IsBalanced(Node<T>* t) {
     int black = 0;
     Node<T>* x = t;
-    while (x != nullptr) {
+    while (!IsDummy(x)) {
         if (!IsRedLink(x)) black++;
         x = x->left;
     }
@@ -610,7 +732,7 @@ bool IsBalanced(Node<T>* t) {
  */
 template <typename T>
 bool IsBalanced(Node<T>* h, int black) {
-    if (!h) return black == 0;
+    if (IsDummy(h)) return black == 0;
     if (!IsRedLink(h)) black--;
     return IsBalanced(h->left, black) && IsBalanced(h->right, black);
 }
@@ -632,7 +754,7 @@ bool Is23(Node<T>* r) { return Is23Rec(r); }
  */
 template <typename T>
 bool Is23Rec(Node<T>* h) {
-    if (!h) return true;
+    if (IsDummy(h)) return true;
     if (IsRedLink(h->right)) return false;
     if (IsRedLink(h) && IsRedLink(h->left)) return false;
     return Is23(h->left) && Is23(h->right);
@@ -641,10 +763,10 @@ bool Is23Rec(Node<T>* h) {
 /**
  * @internal
  * @brief Checks if the tree is a left-leaning red-black tree
- * @page r the root tree
- *@return @c true or @c false
+ * @param r the tree root
+ * @return @c true or @c false
  */
 template <typename T>
-bool Check(Node<T>* r) { return IsBalanced(r) && Is23(r); }
+bool Check(Node<T>* r) { return IsBalanced(r) && Is23(r) && IsBST(r); }
 
 #endif //REDBLACKTREE_H

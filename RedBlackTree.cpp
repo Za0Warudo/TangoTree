@@ -25,7 +25,6 @@ int main () {
                 else {
                     tree_map[id] = Initialize<int>();
                     tree_map[id] = Insert(tree_map[id], val);
-                    assert(Check(tree_map[id]));
                 }
                 break;
             }
@@ -36,10 +35,7 @@ int main () {
             }
             case 3: {
                 std::cin >> id >> val;
-                if (tree_map.contains(id)) {
-                    tree_map[id] = Remove(tree_map[id], val);
-                    assert(Check(tree_map[id]));
-                }
+                if (tree_map.contains(id)) { tree_map[id] = Remove(tree_map[id], val); }
                 else std::cout << "Invalid ID" << std::endl;
                 break;
             }
@@ -48,9 +44,9 @@ int main () {
                 Node<int>* joinedTree = Join(
                                             tree_map.contains(id)? tree_map[id1] : nullptr,
                                             new Node<int>(val),
-                                            tree_map.contains(id)? tree_map[id2] : nullptr);
+                                            tree_map.contains(id)? tree_map[id2] : nullptr
+                                            );
                 Show(joinedTree);
-                assert(Check(joinedTree));
                 break;
             }
             case 5: {
@@ -58,16 +54,12 @@ int main () {
                 if (tree_map.contains(id)) {
                     auto [L, x, R] = Split(tree_map[id], k);
 
-                    std::cout << 'L' << std::endl;
+                    std::cout << "L:" << std::endl;
                     Show(L);
-                    std::cout << 'x' << std::endl;
+                    std::cout << "x:" << std::endl;
                     Show(x);
-                    std::cout << 'R' << std::endl;
+                    std::cout << "R:" << std::endl;
                     Show(R);
-
-                    assert(Check(L));
-                    assert(Check(x));
-                    assert(Check(R));
                 }
                 else {
                     std::cout << "Invalid ID" << std::endl;

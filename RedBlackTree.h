@@ -5,13 +5,12 @@
 #include <algorithm>
 #include <cassert>
 #include <iostream>
+#include <tuple>
 #include <bits/ostream.tcc>
 
 /**
  * @enum Color
  * @brief Data type to encode colors.
- *
- * The colors are used to establish some balance properties in the tree.
  */
 enum Color {
     RED,       // Red link color
@@ -19,25 +18,40 @@ enum Color {
 };
 
 /**
+ * @enum NodeType
+ * @brief Data type for node type
+ */
+enum NodeType {
+    REGULAR,
+    EXTERNAL,
+    DUMMY
+};
+
+/**
  * @brief Node struct for Red-Black-Tree.
- *
- * @tparam T data type
+ * @tparam T data type (also the key for the BST)
  */
 template <typename T>
 struct Node {
-    T data;                             // Node's data
+    T data;                             // Node's data and key
     Node *left, *right;                 // Left & Right children
     int size;                           // Node subtree size
     int height;                         // Node black height
     Color color;                        // Parent link color
+    NodeType type;                      // Node's type
 
     /**
      * @brief Build a new node.
-     *
      * @param data information to be saved in the node
+     * @param t Node's type, default is regular
      */
-    explicit Node(T data): data(data), left(nullptr), right(nullptr), size(1), height(0), color(RED) {}
+    explicit Node(T data, const NodeType t = REGULAR): data(data), left(nullptr), right(nullptr), size(1), height(0), color(RED), type(t) {}
 };
+
+/*
+template <typename T>
+Node<T>* dummy = new Node<T>(T(), DUMMY);
+*/
 
 /* Constructor */
 
@@ -75,6 +89,7 @@ template <typename T>
 int Height(Node<T>* x) { return x? x->height: -1; }
 
 /**
+ * @internal
  * @brief @c true if the x node parent link is a red link, @c false otherwise.
  * @param x the node
  * @return @c true or @c false
@@ -83,6 +98,7 @@ template <typename T>
 bool IsRedLink(Node<T>* x) { return x? x->color == RED : false; }
 
 /**
+ * @internal
  * @brief Updates size variable of node x.
  * @param x the node
  */
@@ -92,6 +108,7 @@ void UpdateSize(Node<T>* x) {
 }
 
 /**
+ * @internal
  * @brief Updates height variable of node x.
  * @param x the node
  */
@@ -100,16 +117,30 @@ void UpdateHeight(Node<T>* x) {
     if (x) x->height = std::max(Height(x->left) + IsRedLink(x->left)? 0 : 1, x->right? Height(x->right) + 1 : 0);
 }
 
+/**
+ * @internal
+ * @brief Removes the left and right children of the given node and update the node's information.
+ * @param x the node
+ */
+template <typename T>
+void Detach(Node<T>* x) {
+    if (x) {
+        x->left = nullptr; x->right = nullptr;
+        UpdateHeight(x); UpdateSize(x);
+    }
+}
+
 /* Red-Black-Property functions */
 
 /**
+ * @internal
  * @brief Rotates the h tree to the right.
  * @param h the tree node
  * @return the new subtree after the rotation
  */
 template <typename T>
 Node<T>* RotateRight(Node<T>* h) {
-    // assert(h && IsRedLink(h->left) && !IsRedLink(h->right)); // conditions to do the right rotation
+    assert(h && IsRedLink(h->left) && !IsRedLink(h->right)); // conditions to do the right rotation
 
     Node<T>* y = h->left;
     h->left = y->right;
@@ -126,13 +157,14 @@ Node<T>* RotateRight(Node<T>* h) {
 }
 
 /**
+ * @internal
  * @brief Rotates the h tree to the left.
  * @param h the tree node
  * @return the new subtree after the rotation
  */
 template <typename T>
 Node<T>* RotateLeft(Node<T>* h) {
-    // assert(h && IsRedLink(h->right) && !IsRedLink(h->left)); // conditions to do the right rotation
+    assert(h && IsRedLink(h->right) && !IsRedLink(h->left)); // conditions to do the right rotation
 
     Node<T>* y = h->right;
     h->right = y->left;
@@ -149,13 +181,14 @@ Node<T>* RotateLeft(Node<T>* h) {
 }
 
 /**
+ * @internal
  * @brief Make h.left or one of its children a red link.
  * @param h the tree node
  * @return the subtree after the operation
  */
 template <typename T>
 Node<T>* MoveRedLeft (Node<T>* h) {
-    // assert(h && IsRedLink(h) && !IsRedLink(h->left) && !IsRedLink(h->left->left)); // conditions to do the operation
+    assert(h && IsRedLink(h) && !IsRedLink(h->left) && !IsRedLink(h->left->left)); // conditions to do the operation
 
     FlipColors(h);
     if (IsRedLink(h->right->left)) {
@@ -167,13 +200,14 @@ Node<T>* MoveRedLeft (Node<T>* h) {
 }
 
 /**
+ * @internal
  * @brief Make h.right or one of its children a red link.
  * @param h the tree node
  * @return the subtree after the operation
  */
 template <typename T>
 Node<T>* MoveRedRight (Node<T>* h) {
-    // assert(h && IsRedLink(h) && !IsRedLink(h->right) && !IsRedLink(h->right->left)); // conditions to do the operation
+    assert(h && IsRedLink(h) && !IsRedLink(h->right) && !IsRedLink(h->right->left)); // conditions to do the operation
 
     FlipColors(h);
     if (IsRedLink(h->left->left)) {
@@ -184,12 +218,19 @@ Node<T>* MoveRedRight (Node<T>* h) {
 }
 
 /**
+ * @internal
  * @brief Flip h node and it's children colors.
  * @param h the tree node
  */
 template <typename T>
 void FlipColors(Node<T>* h) {
-    // assert(h && IsRedLink(h->left) && IsRedLink(h->right)); // condition to make the flip
+
+    // conditions to make the flip
+    assert(h && h->left && h->right);
+    assert(
+    IsRedLink(h->left) && IsRedLink(h->right) && !IsRedLink(h) ||
+    !IsRedLink(h->left) && !IsRedLink(h->right) && IsRedLink(h)
+    );
 
     h->color = h->color == RED ? BLACK : RED;
     h->left->color = h->left->color == RED ? BLACK : RED;
@@ -198,6 +239,7 @@ void FlipColors(Node<T>* h) {
 
 
 /**
+ * @internal
  * @brief Fix the Red-Black-Property in node x.
  * @param x the tree node
  * @return subtree after the balance operation
@@ -425,8 +467,12 @@ Node<T>* RemoveRec(Node<T>* h, T key) {
  */
 template <typename T>
 Node<T>* Join(Node<T>* t1, Node<T>* x, Node<T>* t2) {
+    if (!t1 && !t2) return x;
+    if (!t1) return Insert(t2, x->data);
+    if (!t2) return Insert(t1, x->data);
+
     Node<T>* root = JoinRec(t1, x,  t2);
-    if (!IsEmpty(root)) root->color = BLACK;
+    if (!IsEmpty(root)) root->color = BLACK; // root is always a black link condition
     return root;
 }
 
@@ -440,7 +486,6 @@ Node<T>* Join(Node<T>* t1, Node<T>* x, Node<T>* t2) {
  */
 template <typename T>
 Node<T>* JoinRec(Node<T>* t1, Node<T>* x, Node<T>* t2) {
-    if (!t1 && !t2) return x;
 
     if (Height(t1) < Height(t2)) {
         t2->left = JoinRec(t1, x, t2->left);
@@ -450,11 +495,66 @@ Node<T>* JoinRec(Node<T>* t1, Node<T>* x, Node<T>* t2) {
         t1->right = JoinRec(t1->right, x,  t2);
         return Balance(t1);
     }
+
     x->color = RED;
     x->left = t1;
     x->right = t2;
+
     return Balance(x);
 }
+
+
+/**
+ * @brief Splits the rooted tree at node y into two trees L, R and a node x. Where all keys in L are less than k,
+ * all keys in R are greater than k and x.key = k.
+ * @param y the root of the tree
+ * @param k the key. k must be a key in the tree
+ * @return a triple (L, x, R) as described
+ * @throw std::runtime_error if the key k is not in the tree.
+ */
+template <typename T>
+std::tuple<Node<T>*, Node<T>*, Node<T>*> Split(Node<T>* y, T k) {
+    if (!Contains(y, k)) throw std::runtime_error("key not found");
+    auto [L, x, R] = SplitRec(y, k);
+
+    // root is always a black link condition
+    if (L) L->color = BLACK;
+    if (R) R->color = BLACK;
+
+    x->color = BLACK;
+
+    return std::make_tuple(L, x, R);
+}
+
+/**
+ * @brief Recursive method for split.
+ * @param h the subtree node
+ * @param k the key
+ * @return a triple (L, x, R) as described
+ */
+template <typename T>
+std::tuple<Node<T>*, Node<T>*, Node<T>*> SplitRec(Node<T>* h, T k) {
+    if (h->data < k) {
+        auto [L, x, R] = SplitRec(h->right, k);
+        Node<T>* ll = h->left; if (ll) ll->color = BLACK;
+        Detach(h); // clean pointers
+        return std::make_tuple(Join(ll, h, L), x, R);
+    }
+    if (h->data > k) {
+        auto [L, x, R] = SplitRec(h->left, k);
+        Node<T>* rr = h->right; if (rr) rr->color = BLACK;
+        Detach(h); // clean pointers
+        return std::make_tuple(L, x, Join(R, h, rr));
+    }
+    // save pointers
+    Node<T>* hl = h->left; if (hl) hl->color = BLACK;
+    Node<T>* hr = h->right; if (hr) hr->color = BLACK;
+
+    Detach(h);
+
+    return std::make_tuple(hl, h, hr);
+}
+
 
 /* Show functions */
 
@@ -515,5 +615,36 @@ bool IsBalanced(Node<T>* h, int black) {
     return IsBalanced(h->left, black) && IsBalanced(h->right, black);
 }
 
+/**
+ * @internal
+ * @brief Checks if the tree is a 2-3 tree
+ * @param r the tree root
+ * @return @c true or @c false
+ */
+template <typename T>
+bool Is23(Node<T>* r) { return Is23Rec(r); }
+
+/**
+ * @internal
+ * @brief Recursive method to check if the tree is a 2-3 tree
+ * @param h the subtree node
+ * @return @c true or @c false
+ */
+template <typename T>
+bool Is23Rec(Node<T>* h) {
+    if (!h) return true;
+    if (IsRedLink(h->right)) return false;
+    if (IsRedLink(h) && IsRedLink(h->left)) return false;
+    return Is23(h->left) && Is23(h->right);
+}
+
+/**
+ * @internal
+ * @brief Checks if the tree is a left-leaning red-black tree
+ * @page r the root tree
+ *@return @c true or @c false
+ */
+template <typename T>
+bool Check(Node<T>* r) { return IsBalanced(r) && Is23(r); }
 
 #endif //REDBLACKTREE_H

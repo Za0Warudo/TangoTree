@@ -35,14 +35,14 @@ enum NodeType {
 template <typename T>
 struct Node {
     T data;                             // Node's data and key
-    Node<T> *left, *right;              // Left & Right children
+    Node *left, *right;                 // Left & Right children
     int size;                           // Node subtree size
     int height;                         // Node black height
     Color color;                        // Parent link color
     NodeType type;                      // Node's type
 
     /**
-     * @brief Build a new node.
+     * @brief Builds a new node.
      * @param data information to be saved in the node
      * @param c Node's colors, default is RED
      * @param t Node's type, default is REGULAR
@@ -52,14 +52,13 @@ struct Node {
 };
 
 /**
- * @brief The dummy node (works like null)
+ * @brief The dummy node, works similarly to null.
  */
 template <typename T>
 Node<T>* dummy = new Node<T>(T(), BLACK, DUMMY);
 
 /**
  * @brief Returns the dummy node
- *
  */
 template <typename T>
 Node<T>* GetDummy() { return dummy<T>; }
@@ -105,7 +104,7 @@ template <typename T>
 bool IsEmpty(Node<T>* t) { return IsDummy(t); }
 
 /**
- * @brief Get x node size if exists, 0 otherwise.
+ * @brief Get @c x node size if exists, 0 otherwise.
  * @param x the node
  * @return tree size
  */
@@ -113,7 +112,7 @@ template <typename T>
 int Size(Node<T>* x) { return !IsDummy(x)? x->size: 0; }
 
 /**
- * @brief Get x node black height if exists, -1 otherwise.
+ * @brief Get @c x node black height if exists, 0 otherwise.
  * @param x the node
  * @return tree height
  */
@@ -121,7 +120,6 @@ template <typename T>
 int Height(Node<T>* x) { return !IsDummy(x)? x->height: -1; }
 
 /**
- * @internal
  * @brief @c true if the x node parent link is a red link, @c false otherwise.
  * @param x the node
  * @return @c true or @c false
@@ -130,27 +128,25 @@ template <typename T>
 bool IsRedLink(Node<T>* x) { return !IsDummy(x)? x->color == RED : false; }
 
 /**
- * @internal
- * @brief Updates size variable of node x.
+ * @brief Updates size variable of node @c x.
  * @param x the node
  */
 template <typename T>
-void UpdateSize(Node<T>* x) {
-    if (!IsDummy(x)) x->size = Size(x->left) + Size(x->right) + 1;
-}
+void UpdateSize(Node<T>* x) { if (!IsDummy(x)) x->size = Size(x->left) + Size(x->right) + 1; }
 
 /**
- * @internal
- * @brief Updates black height variable of node x.
+ * @brief Updates black height variable of node @c x.
  * @param x the node
  */
 template <typename T>
 void UpdateHeight(Node<T>* x) {
-    if (!IsDummy(x)) x->height = std::max(Height(x->left) + IsRedLink(x->left)? 0 : 1, !IsDummy(x->right)? Height(x->right) + 1 : 0);
+    if (!IsDummy(x)) x->height = std::max(
+        Height(x->left) + IsRedLink(x->left)? 0 : 1,
+        !IsDummy(x->right)? Height(x->right) + 1 : 0
+        );
 }
 
 /**
- * @internal
  * @brief Removes the left and right children of the given node and update the node's information.
  * @param x the node
  */
@@ -159,14 +155,14 @@ void Detach(Node<T>* x) {
     if (!IsDummy(x)) {
         x->left = GetDummy<T>(); x->right = GetDummy<T>();
         UpdateHeight(x); UpdateSize(x);
+        x->color = BLACK;
     }
 }
 
 /* Red-Black-Property functions */
 
 /**
- * @internal
- * @brief Rotates the h tree to the right.
+ * @brief Rotates the @c h tree to the right.
  * @param h the tree node
  * @return the new subtree after the rotation
  */
@@ -189,8 +185,7 @@ Node<T>* RotateRight(Node<T>* h) {
 }
 
 /**
- * @internal
- * @brief Rotates the h tree to the left.
+ * @brief Rotates the @c h tree to the left.
  * @param h the tree node
  * @return the new subtree after the rotation
  */
@@ -213,8 +208,7 @@ Node<T>* RotateLeft(Node<T>* h) {
 }
 
 /**
- * @internal
- * @brief Make h.left or one of its children a red link.
+ * @brief Make @c h.left or one of its children a red link.
  * @param h the tree node
  * @return the subtree after the operation
  */
@@ -232,8 +226,7 @@ Node<T>* MoveRedLeft (Node<T>* h) {
 }
 
 /**
- * @internal
- * @brief Make h.right or one of its children a red link.
+ * @brief Make @c h.right or one of its children a red link.
  * @param h the tree node
  * @return the subtree after the operation
  */
@@ -250,8 +243,7 @@ Node<T>* MoveRedRight (Node<T>* h) {
 }
 
 /**
- * @internal
- * @brief Flip h node and it's children colors.
+ * @brief Flip @c h node and it's children colors.
  * @param h the tree node
  */
 template <typename T>
@@ -271,8 +263,7 @@ void FlipColors(Node<T>* h) {
 
 
 /**
- * @internal
- * @brief Fix the Red-Black-Property in node x.
+ * @brief Fix the Red-Black-Property in node @c x.
  * @param x the tree node
  * @return subtree after the balance operation
  */
@@ -292,7 +283,7 @@ Node<T>* Balance(Node<T>* x) {
 /* Insert functions */
 
 /**
- * @brief Inserts the data in the tree t.
+ * @brief Inserts the data in the tree @c t.
  * @param h the tree root node
  * @param data the new data to be inserted in the tree
  * @return the tree with data added
@@ -300,13 +291,12 @@ Node<T>* Balance(Node<T>* x) {
 template <typename T>
 Node<T>* Insert(Node<T>* h, T data) {
     h = InsertRec(h, data);
-    if (!IsDummy(h)) h->color = BLACK;
+    h->color = BLACK;
     assert(Check(h));
     return h;
 }
 
 /**
- * @internal
  * @brief Recursive auxiliar insert method.
  * @param h the tree node
  * @param data the new data to be inserted
@@ -376,7 +366,6 @@ Node<T>* Max(Node<T>* t) {
 }
 
 /**
- * @internal
  * @brief return all data in the tree
  * @param r the tree root
  * @param q the queue to be store the keys
@@ -387,7 +376,6 @@ void GetAllKeys(Node<T>* r, std::queue<T> q) {
 }
 
 /**
- * @internal
  * @brief Recursive method to get all key in the tree
  * @param h the subtree root
  * @param q the queue to be store the keys
@@ -404,7 +392,7 @@ void GetAllKeysRec(Node<T>* h, std::queue<T> q) {
 /* Remove functions */
 
 /**
- * @brief Removes min element of the tree t.
+ * @brief Removes min element of the tree @c t.
  * @param t the tree node
  * @return the node of the tree after the remove
  * @throw std::runtime_error if the tree is empty
@@ -416,7 +404,7 @@ Node<T>* RemoveMin(Node<T>* t) {
     if (!IsRedLink(t->left) && !IsRedLink(t->right)) t->color = RED;
 
     t = RemoveMinRec(t);
-    if (!IsEmpty(t)) t->color = BLACK;
+    t->color = BLACK;
 
     assert(Check(t));
 
@@ -424,7 +412,6 @@ Node<T>* RemoveMin(Node<T>* t) {
 }
 
 /**
- * @internal
  * @brief Recursive method to remove min.
  * @param h the tree node
  * @return the node of the subtree after the remove
@@ -439,7 +426,7 @@ Node<T>* RemoveMinRec(Node<T>* h) {
 }
 
 /**
- * @brief Removes max element of the tree t.
+ * @brief Removes max element of the tree @c t.
  * @param t the tree root node
  * @return the node of the tree after the remove
  * @throw std::runtime_error if the tree is empty
@@ -451,7 +438,7 @@ Node<T>* RemoveMax(Node<T>* t) {
     if (!IsRedLink(t->left) && !IsRedLink(t->right)) t->color = RED;
 
     t = RemoveMaxRec(t);
-    if (!IsEmpty(t)) t->color = BLACK;
+    t->color = BLACK;
 
     assert(Check(t));
 
@@ -477,7 +464,7 @@ Node<T>* RemoveMaxRec(Node<T>* h) {
 }
 
 /**
- * @brief Removes the element with the key given from tree h.
+ * @brief Removes the element with the key given from tree @c h.
  * @param h the tree
  * @param key the key
  * @return the node of the tree after the remove
@@ -489,7 +476,7 @@ Node<T>* Remove(Node<T>* h, T key) {
     if (!IsRedLink(h->left) && !IsRedLink(h->right)) h->color = RED;
 
     h = RemoveRec(h, key);
-    if (!IsEmpty(h)) h->color = BLACK;
+    h->color = BLACK;
 
     assert(Check(h));
 
@@ -497,7 +484,6 @@ Node<T>* Remove(Node<T>* h, T key) {
 }
 
 /**
- * @internal
  * @brief Recursive method for remove.
  * @param h the tree node
  * @param key the key
@@ -526,8 +512,8 @@ Node<T>* RemoveRec(Node<T>* h, T key) {
 /* Split & Join functions */
 
 /**
- * @brief Given two trees t1, t2 and a node x, where for every key in each tree is valid in t1 < x < t2.
- * Returns a union tree of t1, t2 and x.
+ * @brief Given two trees @c t1, @c t2 and a node @c x, where for every key in each tree is valid in @c t1 < @c x < @c t2.
+ * Returns a union tree of @c t1, @c t2 and @c x.
  * @param t1 root node of the first tree
  * @param x node where t1 < x < t2
  * @param t2 root node of the second tree
@@ -544,18 +530,14 @@ Node<T>* Join(Node<T>* t1, Node<T>* x, Node<T>* t2) {
     GetAllKeys(x, qbefore);
     GetAllKeys(t2, qbefore);
 
-
-    if (IsDummy(t1) && IsDummy(t2)) return x;
-    if (IsDummy(t1)) return Insert(t2, x->data);
-    if (IsDummy(t2)) return Insert(t1, x->data);
-
     Node<T>* root = JoinRec(t1, x,  t2);
-    if (!IsEmpty(root)) root->color = BLACK; // root is always a black link condition
+    root->color = BLACK; // root is always a black link condition
 
     GetAllKeys(root, qafter);
 
     // Checks if join is correct
     assert(Check(root));
+
     while (!qbefore.empty()) {
         assert(qbefore.front() == qafter.front());
         qbefore.pop(); qafter.pop();
@@ -567,7 +549,6 @@ Node<T>* Join(Node<T>* t1, Node<T>* x, Node<T>* t2) {
 }
 
 /**
- * @internal
  * @brief Recursive method to join two trees.
  * @param t1 node of the first tree
  * @param x node where t1 < x < t2
@@ -594,8 +575,8 @@ Node<T>* JoinRec(Node<T>* t1, Node<T>* x, Node<T>* t2) {
 
 
 /**
- * @brief Splits the rooted tree at node y into two trees L, R and a node x. Where all keys in L are less than k,
- * all keys in R are greater than k and x.key = k.
+ * @brief Splits the rooted tree at node @c y into two trees @c L, @c R and a node @c x. Where all keys in @c L are less than @c k,
+ * all keys in @c R are greater than @c k and @c x.key = @c  k.
  * @param y the root of the tree
  * @param k the key. k must be a key in the tree
  * @return a triple (L, x, R) as described
@@ -605,12 +586,6 @@ template <typename T>
 std::tuple<Node<T>*, Node<T>*, Node<T>*> Split(Node<T>* y, T k) {
     if (!Contains(y, k)) throw std::runtime_error("key not found");
     auto [L, x, R] = SplitRec(y, k);
-
-    // root is always a black link condition
-    if (L) L->color = BLACK;
-    if (R) R->color = BLACK;
-
-    x->color = BLACK;
 
     // Checks if the split is correct
     assert(Check(L) && Check(x) && Check(R));
@@ -630,19 +605,19 @@ template <typename T>
 std::tuple<Node<T>*, Node<T>*, Node<T>*> SplitRec(Node<T>* h, T k) {
     if (h->data < k) {
         auto [L, x, R] = SplitRec(h->right, k);
-        Node<T>* ll = h->left; if (ll) ll->color = BLACK;
+        Node<T>* ll = h->left; ll->color = BLACK;
         Detach(h); // clean pointers
         return std::make_tuple(Join(ll, h, L), x, R);
     }
     if (h->data > k) {
         auto [L, x, R] = SplitRec(h->left, k);
-        Node<T>* rr = h->right; if (rr) rr->color = BLACK;
+        Node<T>* rr = h->right; rr->color = BLACK;
         Detach(h); // clean pointers
         return std::make_tuple(L, x, Join(R, h, rr));
     }
     // save pointers
-    Node<T>* hl = h->left; if (hl) hl->color = BLACK;
-    Node<T>* hr = h->right; if (hr) hr->color = BLACK;
+    Node<T>* hl = h->left; hl->color = BLACK;
+    Node<T>* hr = h->right; hr->color = BLACK;
 
     Detach(h);
 
@@ -663,7 +638,6 @@ void Show(Node<T>* t) {
 }
 
 /**
- * @internal
  * @brief Recursive print with space.
  * @param t the tree
  * @param s the number of spaces
@@ -679,8 +653,7 @@ void Show(Node<T>* t, const int s) {
 /* Check function */
 
 /**
- * @internal
- * @brief Check if the tree is a BST
+ * @brief Check if the tree is a BST.
  * @param t the tree root node
  * @return @c true or @c false
  */
@@ -691,8 +664,7 @@ bool IsBST(Node<T>* t) {
 }
 
 /**
- * @internal
- * @brief Recursive method to check if the subtree h is a BST
+ * @brief Recursive method to check if the subtree h is a BST.
  * @param h the subtree root node
  * @param minNode the node with min key find so far
  * @param maxNode the node with max key find so far
@@ -707,8 +679,7 @@ bool IsBSTRec(Node<T>* h, Node<T>* minNode, Node<T>* maxNode) {
 }
 
 /**
- * @internal
- * @brief Checks if the tree is balanced
+ * @brief Checks if the tree is balanced.
  * @param t tree root node
  * @return @c true or @c false
  */
@@ -724,9 +695,8 @@ bool IsBalanced(Node<T>* t) {
 }
 
 /**
- * @internal
- * @brief Recursive method to check if the tree is balanced
- * @param t the subtree node
+ * @brief Recursive method to check if the tree is balanced.
+ * @param h the subtree node
  * @param black number of black links in the path
  * @return @c true or @c false
  */
@@ -738,8 +708,7 @@ bool IsBalanced(Node<T>* h, int black) {
 }
 
 /**
- * @internal
- * @brief Checks if the tree is a 2-3 tree
+ * @brief Checks if the tree is a 2-3 tree.
  * @param r the tree root
  * @return @c true or @c false
  */
@@ -747,8 +716,7 @@ template <typename T>
 bool Is23(Node<T>* r) { return Is23Rec(r); }
 
 /**
- * @internal
- * @brief Recursive method to check if the tree is a 2-3 tree
+ * @brief Recursive method to check if the tree is a 2-3 tree.
  * @param h the subtree node
  * @return @c true or @c false
  */
@@ -761,8 +729,7 @@ bool Is23Rec(Node<T>* h) {
 }
 
 /**
- * @internal
- * @brief Checks if the tree is a left-leaning red-black tree
+ * @brief Checks if the tree is a left-leaning red-black tree.
  * @param r the tree root
  * @return @c true or @c false
  */

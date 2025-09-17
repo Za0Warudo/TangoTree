@@ -4,7 +4,7 @@
  * 1 <id> <val>                     - Insert(t_id, val)
  * 2 <id> <val>                     - Contains(t_id, val)
  * 3 <id> <val>                     - Remove(t_id, val)
- * 4 <id> <key> <id>                - Join(t_id, x_key, t_id)
+ * 4 <id> <key> <id>                - Join(t_id, Node(x_key), t_id)
  * 5 <id> <key>                     - Split(t_id, key)
  * 6 <id>                           - Print(t_id)
  */

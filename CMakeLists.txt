@@ -5,4 +5,6 @@ set(CMAKE_CXX_STANDARD 20)
 
 add_executable(TangoTree main.cpp
         RedBlackTree.cpp
-        RedBlackTree.h)
+        RedBlackTree.h
+        TangoTree.cpp
+        TangoTree.h)

@@ -8,6 +8,7 @@
 #include <queue>
 #include <tuple>
 #include <bits/ostream.tcc>
+#include <limits.h>
 
 /**
  * @enum Color
@@ -38,6 +39,9 @@ struct Node {
     Node *left, *right;                 // Left & Right children
     int size;                           // Node subtree size
     int height;                         // Node black height
+    int depth;                          // Node depth (used only in tango tree)
+    int maxDepth;                       // Tree max depth
+    int minDepth;                       // Tree min depth
     Color color;                        // Parent link color
     NodeType type;                      // Node's type
 
@@ -46,9 +50,12 @@ struct Node {
      * @param data information to be saved in the node
      * @param c Node's colors, default is RED
      * @param t Node's type, default is REGULAR
+     * @param d Node's depth
      */
     explicit Node(T data, const Color c = RED,  const NodeType t = REGULAR):
-    data(data), left(nullptr), right(nullptr), size(1), height(0), color(c), type(t) {}
+    data(data), left(nullptr), right(nullptr),
+    size(1), height(0), depth(INT_MAX), maxDepth(-INT_MAX), minDepth(INT_MAX),
+    color(c), type(t) {}
 };
 
 /**
@@ -88,12 +95,28 @@ Node<T>* MakeNode(T data) {
 /* Helpers functions */
 
 /**
- * @brief Returns @c true if the x node is the dummy node, @c false otherwise
+ * @brief Returns @c true if the @c x node is the dummy node, @c false otherwise.
  * @param x the node
  * @return @c true or @c false
  */
 template <typename T>
 bool IsDummy(Node<T>* x) {return x->type == DUMMY; }
+
+/**
+ * @brief Returns @c true if the node @c x is an external node, @c false otherwise.
+ * @param x the node
+ * @return @c true or @c false
+ */
+template <typename T>
+bool IsExternal(Node<T>* x) { return x->type == EXTERNAL; }
+
+/**
+ * @brief Returns @c true if the node @c x is an external node or the dummy node, @c false otherwise.
+ * @param x the node
+ * @return @c true or @c false
+ */
+template <typename T>
+bool IsExternalOrDummy(Node<T>* x) {return IsExternal<T>(x) || IsDummy(x); }
 
 /**
  * @brief Returns @c true if the tree is empty, @c false otherwise.
@@ -109,7 +132,7 @@ bool IsEmpty(Node<T>* t) { return IsDummy(t); }
  * @return tree size
  */
 template <typename T>
-int Size(Node<T>* x) { return !IsDummy(x)? x->size: 0; }
+int Size(Node<T>* x) { return !IsExternalOrDummy(x)? x->size: 0; }
 
 /**
  * @brief Get @c x node black height if exists, 0 otherwise.
@@ -117,7 +140,7 @@ int Size(Node<T>* x) { return !IsDummy(x)? x->size: 0; }
  * @return tree height
  */
 template <typename T>
-int Height(Node<T>* x) { return !IsDummy(x)? x->height: -1; }
+int Height(Node<T>* x) { return !IsExternalOrDummy(x)? x->height: -1; }
 
 /**
  * @brief @c true if the x node parent link is a red link, @c false otherwise.
@@ -125,7 +148,7 @@ int Height(Node<T>* x) { return !IsDummy(x)? x->height: -1; }
  * @return @c true or @c false
  */
 template <typename T>
-bool IsRedLink(Node<T>* x) { return !IsDummy(x)? x->color == RED : false; }
+bool IsRedLink(Node<T>* x) { return !IsExternalOrDummy(x)? x->color == RED : false; }
 
 /**
  * @brief Updates size variable of node @c x.
@@ -168,7 +191,7 @@ void Detach(Node<T>* x) {
  */
 template <typename T>
 Node<T>* RotateRight(Node<T>* h) {
-    assert(!IsDummy(h) && IsRedLink(h->left) && !IsRedLink(h->right)); // conditions to do the right rotation
+    assert(!IsExternalOrDummy(h) && IsRedLink(h->left) && !IsRedLink(h->right)); // conditions to do the right rotation
 
     Node<T>* y = h->left;
     h->left = y->right;
@@ -191,7 +214,7 @@ Node<T>* RotateRight(Node<T>* h) {
  */
 template <typename T>
 Node<T>* RotateLeft(Node<T>* h) {
-    assert(!IsDummy(h) && IsRedLink(h->right) && !IsRedLink(h->left)); // conditions to do the right rotation
+    assert(!IsExternalOrDummy(h) && IsRedLink(h->right) && !IsRedLink(h->left)); // conditions to do the right rotation
 
     Node<T>* y = h->right;
     h->right = y->left;
@@ -250,7 +273,7 @@ template <typename T>
 void FlipColors(Node<T>* h) {
 
     // conditions to make the flip
-    assert(!IsDummy(h) && !IsDummy(h->left) && !IsDummy(h->right));
+    assert(!IsExternalOrDummy(h) && !IsExternalOrDummy(h->left) && !IsExternalOrDummy(h->right));
     assert(
     IsRedLink(h->left) && IsRedLink(h->right) && !IsRedLink(h) ||
     !IsRedLink(h->left) && !IsRedLink(h->right) && IsRedLink(h)
@@ -269,7 +292,7 @@ void FlipColors(Node<T>* h) {
  */
 template<typename T>
 Node<T>* Balance(Node<T>* x) {
-    if (!IsDummy(x)) {
+    if (!IsExternalOrDummy(x)) {
         if (!IsRedLink(x->left) && IsRedLink(x->right)) x = RotateLeft(x);
         if (IsRedLink(x->left) && IsRedLink((x->left)->left)) x = RotateRight(x);
         if (IsRedLink(x->left) && IsRedLink(x->right)) FlipColors(x);
@@ -332,7 +355,7 @@ bool Contains(Node<T>* h, T data) { return !IsDummy(Search(h, data)); }
  */
 template <typename T>
 Node<T>* Search(Node<T>* h, T data) {
-    if (!IsDummy(h)) {
+    if (!IsExternalOrDummy(h)) {
         if (data < h->data) return Search(h->left, data);
         if (data > h->data) return Search(h->right, data);
     }
@@ -646,7 +669,12 @@ template <typename T>
 void Show(Node<T>* t, const int s) {
     if (IsDummy(t)) return;
     Show(t->left, s + 3);
-    std::cout << std::string(s, ' ') << "(" << t->data << ", " << (t->color == RED? "RED" : "BLACK") << ")" << std::endl;
+    std::cout << std::string(s, ' ') << "(" << t->data
+    << ", c=" << t->color
+    << ", t=" << t->type
+    << ", min=" << t->minDepth
+    << ", max=" << t->maxDepth
+    <<  ")" << std::endl;
     Show(t->right, s + 3);
 }
 

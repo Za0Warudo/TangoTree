@@ -8,3 +8,5 @@ RedBlackTree
 *.o
 *.d
 a.out
+main.cpp
+CMakeLists.txt

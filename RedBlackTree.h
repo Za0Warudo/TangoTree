@@ -414,7 +414,6 @@ Node<T>* Min(Node<T>* t) {
     if (IsEmpty(t)) throw std::runtime_error("Min in an empty");
     while (!IsExternalOrDummy(t->left)) {
         t = t->left;
-        std::cout << t->data << std::endl;
     }
     return t;
 }
@@ -634,8 +633,6 @@ Node<T>* Join(Node<T>* t1, Node<T>* x, Node<T>* t2) {
  */
 template <typename T>
 Node<T>* JoinRec(Node<T>* t1, Node<T>* x, Node<T>* t2) {
-    std::cout << t1->data << " " << t2->data << std::endl;
-
     if (Height(t1) < Height(t2)) {
         t2->left = JoinRec(t1, x, t2->left);
         return Balance(t2);

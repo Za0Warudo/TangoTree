@@ -33,6 +33,7 @@ int Successor(Node<int>* h, const int d) {
     return suc > 0? suc : h->data;
 }
 
+
 /********************************/
 
 /* Tango */
@@ -151,7 +152,6 @@ Node<int>* SearchTango(Node<int>* root, const int key) {
     auto [q, p] = Search(root, key);
     while (IsExternal(q)) {
         root = Tango(root, q, p);
-        ShowTango(root);
         std::tie(q, p) = Search(root, key);
     }
     return root;

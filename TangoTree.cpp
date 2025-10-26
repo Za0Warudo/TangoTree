@@ -12,10 +12,18 @@
  * 15
  * 1 4
  * 2
- *
+ * 1 10
+ * 2
+ * 1 1
+ * 2
  */
 
+/* Includes */
 #include "TangoTree.h"
+#include <iostream>
+
+
+/* -------------------------------------------------- */
 
 /* Sucessor & Predecessor */
 
@@ -33,146 +41,153 @@ int Successor(Node<int>* h, const int d) {
     return suc > 0? suc : h->data;
 }
 
+/* -------------------------------------------------- */
 
-/********************************/
+/* Search & Tango */
 
-/* Tango */
+Node<int>* SearchTango(Node<int>* root, const int k) {
+
+    for (auto [q, p] = Search(root, k); IsExternal(q); std::tie(q, p) = Search(root, k))
+        root = Tango(root, q, p); // Updates the preferred path
+
+    return root;
+}
 
 Node<int>* Tango(Node<int>* h, Node<int>* q, Node<int>* p) {
-    enum Side {LEFT, RIGHT};
+    enum Side {LEFT, RIGHT}; Side side;
 
-    Side side;
-    if (p->left == q) {  // save min(q).left pointer
+    if (p->left == q) {  // Save min(q).left pointer
         side = LEFT;
-        q->type = REGULAR;
+        q->type = REGULAR; // To perform Min operation
         Node<int>* min = Min(q);
+        q->type = EXTERNAL;
         p->left = min->left;
         min->left = GetDummy<int>();
-        q->type = EXTERNAL;
     }
-    else { // save max(q).right pointer
+    else { // Save max(q).right pointer
         side = RIGHT;
-        q->type = REGULAR;
+        q->type = REGULAR; // To perform Max operation
         Node<int>* max = Max(q);
+        q->type = EXTERNAL;
         p->right = max->right;
         max->right = GetDummy<int>();
-        q->type = EXTERNAL;
     }
 
     if (h->maxDepth < q->minDepth) { // Rx is empty
-        if (side == LEFT) { // p->left was equal to q
+        if (side == LEFT) {
             auto [tl, pp, tg] = Split(h, p->data);
+
             q->type = REGULAR;
             Node<int>* tr = Join(q, pp, tg);
+
             auto [x, hh] = ExtractMin(tr);
+            // x is min(q), the x->left & x->right pointers are safe (save in the beginning and by join operation)
             assert(IsDummy(x->left) && IsDummy(x->right));
+
             return Join(tl, x, hh);
-        }
-        else { // p->right was equal to q
+        } else {
             auto [tl, pp, tg] = Split(h, p->data);
+
             q->type = REGULAR;
             Node<int>* tr = Join(tl, pp, q);
+
             auto [hh, x] = ExtractMax(tr);
+            // x is max(q), the x->left & x->right pointers are safe (save in the beginning and by join operation)
             assert(IsDummy(x->left) && IsDummy(x->right));
+
             return Join(hh, x, tg);
         }
-    }
-    else { // Rx is not empty
+    } else { // Rx is not empty
 
-        const int d = q->minDepth;
-        const int ll = Predecessor(h, d);
-        const int rr = Successor(h, d);
+        const int d = q->minDepth, l = Predecessor(h, d), r = Successor(h, d);
 
         Node<int>* taux; Node<int>* xl; Node<int>* tl;
-        Node<int>* tlr; Node<int>* xr; Node<int>* tg; Node<int>* tp;
+        Node<int>* tm; Node<int>* xg; Node<int>* tg; Node<int>* tp;
 
-        if (ll == -1) { // don't have any keys smaller or equal to ll
+        if (l == -1) { // don't have any keys smaller or equal to ll
             taux = h;
             xl = GetDummy<int>();
         }
-        else  std::tie(tl, xl, taux) = Split(h, ll);
+        else std::tie(tl, xl, taux) = Split(h, l);
 
-        if (rr == -1) { // don't have any keys greater or equal to rr
-            tlr = taux;
-            xr = GetDummy<int>();
+        if (r == -1) { // don't have any keys greater or equal to rr
+            tm = taux;
+            xg = GetDummy<int>();
         }
-        else std::tie(tlr, xr, tg) = Split(taux, rr);
+        else std::tie(tm, xg, tg) = Split(taux, r);
 
 
-        tlr->type = EXTERNAL;
+        tm->type = EXTERNAL;
         q->type = REGULAR;
 
-        if (tlr->data < q->data) {
-            if (IsDummy(xl)) tp = tlr;
-            else tp = Join(tl, xl, tlr);
+        if (tm->data < q->data) {
+            if (IsDummy(xl)) tp = tm; // Don't split in tl, xl
+            else tp = Join(tl, xl, tm);
 
-            Node<int>* tpp = Join(tp, xr, q);
-            auto [hh, xaux] = ExtractMax(tpp);
+            Node<int>* tpp = Join(tp, xg, q);
+            auto [hh, x] = ExtractMax(tpp);
 
-            assert(IsDummy(xaux->left) && IsDummy(xaux->right));
+            // x is max(q), the x->left & x->right pointers are safe (save in the beginning and by join operation)
+            assert(IsDummy(x->left) && IsDummy(x->right));
 
-            return Join(hh, xaux, tg);
+            return Join(hh, x, tg);
 
         }
         else {
-            if (IsDummy(xr)) tp = tlr;
-            else tp = Join(tlr, xr, tg);
+            if (IsDummy(xg)) tp = tm; // Don't split in xg, tg
+            else tp = Join(tm, xg, tg);
 
             Node<int>* tpp = Join(q, xl, tp);
-            auto [xaux, hh] = ExtractMin(tpp);
+            auto [x, hh] = ExtractMin(tpp);
 
-            assert(IsDummy(xaux->left) && IsDummy(xaux->right));
+            // x is min(q), the x->left & x->right pointers are safe (save in the beginning and by join operation)
+            assert(IsDummy(x->left) && IsDummy(x->right));
 
-            return Join(tl, xaux, hh);
+            return Join(tl, x, hh);
         }
     }
 }
 
-/********************************/
+/* -------------------------------------------------- */
 
-
-Node<int>* BuildTangoTree(const int n) {
-    Node<int>* root = TangoBuild(1, n,  0);
+Node<int>* TangoBuild(const int n) {
+    Node<int>* root = TangoBuildRec(1, n,  0);
     root->type = REGULAR;
     return root;
 }
 
-void ShowTangoRec(Node<int>* h, const int depth) {
-    if (!IsDummy(h)) {
-        ShowTangoRec(h->left, depth + 3);
-        std::cout << std::string(depth, ' ');
-        std::cout << (h->type == REGULAR? RED_COLOR : RESET) << "(" << h->data << ")" << std::endl;
-        ShowTangoRec(h->right, depth + 3);
-    }
-}
-
-void ShowTango(Node<int>* root) { ShowTangoRec(root, 0);}
-
-Node<int>* SearchTango(Node<int>* root, const int key) {
-    auto [q, p] = Search(root, key);
-    while (IsExternal(q)) {
-        root = Tango(root, q, p);
-        std::tie(q, p) = Search(root, key);
-    }
-    return root;
-}
-
-Node<int>* TangoBuild(const int l, const int r, const int d) {
+Node<int>* TangoBuildRec(const int l, const int r, const int d) {
     if (l > r) return GetDummy<int>();
-    const int m = (l + r + 1)/2; // get the ceil
+    const int m = (l + r + 1)/2; // Get the ceil
     Node<int>* x = MakeNode(m);
     x->color = BLACK;
     x->type = EXTERNAL;
     x->depth = x->maxDepth = x->minDepth = d;
-    x->left = TangoBuild(l, m-1, d+1);
-    x->right = TangoBuild(m + 1, r, d+1);
+    x->left = TangoBuildRec(l, m-1, d+1);
+    x->right = TangoBuildRec(m + 1, r, d+1);
     return x;
 }
+
+/* -------------------------------------------------- */
+
+void ShowTangoRec(Node<int>* h, const int d) {
+    if (!IsDummy(h)) {
+        ShowTangoRec(h->left, d + 3);
+        std::cout << std::string(d, ' ');
+        std::cout << (h->type == REGULAR? RED_COLOR : RESET) << "(" << h->data << ")" << std::endl;
+        ShowTangoRec(h->right, d + 3);
+    }
+}
+
+void ShowTango(Node<int>* root) { ShowTangoRec(root, 0); }
+
+
+/* -------------------------------------------------- */
 
 int main () {
     int n; std::cin >> n;
 
-    Node<int>* root = BuildTangoTree(n);
+    Node<int>* root = TangoBuild(n);
 
     int operation;
 
@@ -193,6 +208,5 @@ int main () {
             }
         }
     }
-
     return EXIT_SUCCESS;
 }

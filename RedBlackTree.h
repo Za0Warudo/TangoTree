@@ -1,3 +1,16 @@
+/**
+*  @file RedBlackTree.h
+ * @brief Defines the Red-Black Tree data structure
+ *
+ * The file provides the declaration for the Red-Black Tree data structure,
+ * including the basic functions and split join for tango tree implementation
+ *
+ * @date October 2025
+ * @version 1.0.1
+ * @author Za0Warudo
+ * @note This implementation is only used in an auxiliary way for the tango tree data structure.
+ */
+
 #ifndef REDBLACKTREE_H
 #define REDBLACKTREE_H
 
@@ -12,7 +25,7 @@
 
 /**
  * @enum Color
- * @brief Data type to encode colors.
+ * @brief Data type to encode colors
  */
 enum Color {
     RED,       // Red link color
@@ -30,7 +43,7 @@ enum NodeType {
 };
 
 /**
- * @brief Node struct for Red-Black-Tree.
+ * @brief Node struct for Red-Black-Tree
  * @tparam T data type (also the key for the BST)
  */
 template <typename T>
@@ -46,7 +59,7 @@ struct Node {
     NodeType type;                      // Node's type
 
     /**
-     * @brief Builds a new node.
+     * @brief Builds a new node
      * @param data information to be saved in the node
      * @param c Node's colors, default is RED
      * @param t Node's type, default is REGULAR
@@ -58,7 +71,7 @@ struct Node {
 };
 
 /**
- * @brief The dummy node, works similarly to null.
+ * @brief The dummy node, works similarly to null
  */
 template <typename T>
 Node<T>* dummy = new Node<T>(T(), BLACK, DUMMY);

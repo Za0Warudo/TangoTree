@@ -101,7 +101,7 @@ Node<int>* Tango(Node<int>* h, Node<int>* q, Node<int>* p) {
 
         const int d = q->minDepth, l = Predecessor(h, d), r = Successor(h, d);
 
-        Node<int>* taux; Node<int>* xl; Node<int>* tl;
+        Node<int>* taux; Node<int>* xl; Node<int>* tl; Node<int>* tpp;
         Node<int>* tm; Node<int>* xg; Node<int>* tg; Node<int>* tp;
 
         if (l == -1) { // don't have any keys smaller or equal to ll
@@ -124,7 +124,8 @@ Node<int>* Tango(Node<int>* h, Node<int>* q, Node<int>* p) {
             if (IsDummy(xl)) tp = tm; // Don't split in tl, xl
             else tp = Join(tl, xl, tm);
 
-            Node<int>* tpp = Join(tp, xg, q);
+            if (IsDummy(xg)) tpp = tp;
+            else tpp = Join(tp, xg, q);
             auto [hh, x] = ExtractMax(tpp);
 
             // x is max(q), the x->left & x->right pointers are safe (save in the beginning and by join operation)
@@ -137,10 +138,10 @@ Node<int>* Tango(Node<int>* h, Node<int>* q, Node<int>* p) {
             if (IsDummy(xg)) tp = tm; // Don't split in xg, tg
             else tp = Join(tm, xg, tg);
 
-            Node<int>* tpp = Join(q, xl, tp);
+            if (IsDummy(xl)) tpp = tp;
+            else tpp = Join(q, xl, tp);
             auto [x, hh] = ExtractMin(tpp);
 
-            // x is min(q), the x->left & x->right pointers are safe (save in the beginning and by join operation)
             assert(IsDummy(x->left) && IsDummy(x->right));
 
             return Join(tl, x, hh);

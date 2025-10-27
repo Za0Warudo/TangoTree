@@ -533,7 +533,7 @@ template <typename T>
 Node<T>* RemoveMaxRec(Node<T>* h) {
     if (IsRedLink(h->left)) h = RotateRight(h);
 
-    if (IsExternalOrDummy(h->right)) return GetDummy<T>();
+    if (IsExternalOrDummy(h->right)) return h->left;
 
     if (!IsRedLink(h->right) && !IsRedLink(h->right->left)) h = MoveRedRight(h);
 
@@ -598,7 +598,7 @@ std::pair<Node<T>*, Node<T>*> ExtractMin(Node<T>* t) {
     if (IsEmpty(t)) throw std::runtime_error("Extract from an empty");
     Node<T>* minNode = Min(t);
     Node<T>* h = RemoveMin(t);
-    minNode->right = GetDummy<T>();
+    Detach(minNode);
     return {minNode, h};
 }
 
@@ -612,10 +612,9 @@ template <typename T>
 std::pair<Node<T>*, Node<T>*> ExtractMax(Node<T>* t) {
     if (IsEmpty(t)) throw std::runtime_error("Extract from an empty");
     Node<T>* maxNode = Max(t);
-    auto [h, node, empty] = Split(t, maxNode->data);
-    node->left = GetDummy<T>();
-    node->right = GetDummy<T>();
-    return {h, node};
+    Node<T>* h = RemoveMax(t);
+    Detach(maxNode);
+    return {h, maxNode};
 }
 
 /* Split & Join functions */
@@ -630,6 +629,8 @@ std::pair<Node<T>*, Node<T>*> ExtractMax(Node<T>* t) {
  */
 template <typename T>
 Node<T>* Join(Node<T>* t1, Node<T>* x, Node<T>* t2) {
+
+    assert(IsDummy(x->left) && IsDummy(x->right));
 
     Node<T>* root = JoinRec(t1, x,  t2);
     root->color = BLACK; // root is always a black link condition
@@ -654,6 +655,7 @@ Node<T>* JoinRec(Node<T>* t1, Node<T>* x, Node<T>* t2) {
         t1->right = JoinRec(t1->right, x,  t2);
         return Balance(t1);
     }
+
     x->color = RED;
     x->left = t1;
     x->right = t2;

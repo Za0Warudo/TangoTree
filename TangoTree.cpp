@@ -28,17 +28,17 @@
 /* Sucessor & Predecessor */
 
 int Predecessor(Node<int>* h, const int d) {
-    if (!IsExternalOrDummy(h->left) && h->left->maxDepth >= d) return Predecessor(h->left, d);
-    if (h->depth >= d) return !IsExternalOrDummy(h->left)? Max(h->left)->data : -1;
+    if (!IsEmpty(h->left) && h->left->maxDepth >= d) return Predecessor(h->left, d);
+    if (h->depth >= d) return !IsEmpty(h->left)? Max(h->left)->data : -1;
     const int pred = Predecessor(h->right, d);
-    return pred > 0? pred : h->data;
+    return pred != -1? pred : h->data;
 }
 
 int Successor(Node<int>* h, const int d) {
-    if (!IsExternalOrDummy(h->right) && h->right->maxDepth >= d) return Successor(h->right, d);
-    if (h->depth >= d) return !IsExternalOrDummy(h->right)? Min(h->right)->data : -1;
+    if (!IsEmpty(h->right) && h->right->maxDepth >= d) return Successor(h->right, d);
+    if (h->depth >= d) return !IsEmpty(h->right)? Min(h->right)->data : -1;
     const int suc = Successor(h->left, d);
-    return suc > 0? suc : h->data;
+    return suc != -1? suc : h->data;
 }
 
 /* -------------------------------------------------- */
@@ -151,6 +151,8 @@ Node<int>* Tango(Node<int>* h, Node<int>* q, Node<int>* p) {
 
 /* -------------------------------------------------- */
 
+/* Build functions */
+
 Node<int>* TangoBuild(const int n) {
     Node<int>* root = TangoBuildRec(1, n,  0);
     root->type = REGULAR;
@@ -160,16 +162,18 @@ Node<int>* TangoBuild(const int n) {
 Node<int>* TangoBuildRec(const int l, const int r, const int d) {
     if (l > r) return GetDummy<int>();
     const int m = (l + r + 1)/2; // Get the ceil
-    Node<int>* x = MakeNode(m);
+    Node<int>* x = BuildNode(m);
     x->color = BLACK;
     x->type = EXTERNAL;
     x->depth = x->maxDepth = x->minDepth = d;
-    x->left = TangoBuildRec(l, m-1, d+1);
+    x->left = TangoBuildRec(l, m - 1, d+1);
     x->right = TangoBuildRec(m + 1, r, d+1);
     return x;
 }
 
 /* -------------------------------------------------- */
+
+/* Show functions */
 
 void ShowTangoRec(Node<int>* h, const int d) {
     if (!IsDummy(h)) {

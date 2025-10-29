@@ -64,7 +64,17 @@ Node<int>* TangoBuildRec(int l, int r, int d);
  * @param d Cut depth
  * @return The predecessor key
  */
-int Predecessor(const Node<int>* h, int d);
+std::pair<int, int> Predecessor(const Node<int> *h, int d);
+
+/**
+ * @brief Recursive method to obtain the predecessor of d depth in the tree h
+ *
+ * @param h the subtree root node
+ * @param d the cut depth
+ * @return the predecessor key
+ */
+std::pair<int, int> PredecessorRec(const Node<int>* h, int d);
+
 
 /**
  * @brief Find the successor key of the h tree and d depth
@@ -81,7 +91,16 @@ int Predecessor(const Node<int>* h, int d);
  * @param d Cut depth
  * @return The successor key
  */
-int Successor(const Node<int>* h, int d);
+std::pair<int, int> Successor(const Node<int>* h, int d);
+
+/**
+ * @brief Recursive method to obtain the sucessor of d depth in the h tree
+ * @param h the subtree root node
+ * @param d the cut depth
+ * @return the sucessor key
+ */
+std::pair<int, int> SuccessorRec(const Node<int> *h, int d);
+
 
 /**
  * @brief Search the key k in the tango tree given

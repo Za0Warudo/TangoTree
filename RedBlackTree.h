@@ -131,7 +131,7 @@ Node<T>* BuildNode(T data) {
  * @return @c true or @c false
  */
 template <typename T>
-bool IsDummy(Node<T>* x) { return x->type == DUMMY; }
+bool IsDummy(const Node<T>* x) { return x->type == DUMMY; }
 
 /**
  * @brief Checks if @c x node is an external node
@@ -139,7 +139,7 @@ bool IsDummy(Node<T>* x) { return x->type == DUMMY; }
  * @return @c true or @c false
  */
 template <typename T>
-bool IsExternal(Node<T>* x) { return x->type == EXTERNAL; }
+bool IsExternal(const Node<T>* x) { return x->type == EXTERNAL; }
 
 /**
  * @brief Checks if the @c x node is an external or the dummy node
@@ -147,7 +147,7 @@ bool IsExternal(Node<T>* x) { return x->type == EXTERNAL; }
  * @return @c true or @c false
  */
 template <typename T>
-bool IsExternalOrDummy(Node<T>* x) {return IsExternal<T>(x) || IsDummy(x); }
+bool IsExternalOrDummy(const Node<T>* x) {return IsExternal<T>(x) || IsDummy(x); }
 
 /**
  * @brief Checks if the @c x node is an empty tree
@@ -155,7 +155,7 @@ bool IsExternalOrDummy(Node<T>* x) {return IsExternal<T>(x) || IsDummy(x); }
  * @return @c true or @c false
  */
 template <typename T>
-bool IsEmpty(Node<T>* t) { return IsExternalOrDummy(t); }
+bool IsEmpty(const Node<T>* t) { return IsExternalOrDummy(t); }
 
 /**
  * @brief Get @c x node size
@@ -166,7 +166,7 @@ bool IsEmpty(Node<T>* t) { return IsExternalOrDummy(t); }
  * @return tree size
  */
 template <typename T>
-int Size(Node<T>* x) { return !IsEmpty(x)? x->size: 0; }
+int Size(const Node<T>* x) { return !IsEmpty(x)? x->size: 0; }
 
 /**
  * @brief Get @c x node black height
@@ -177,7 +177,7 @@ int Size(Node<T>* x) { return !IsEmpty(x)? x->size: 0; }
  * @return tree height
  */
 template <typename T>
-int Height(Node<T>* x) { return !IsEmpty(x)? x->height: -1; }
+int Height(const Node<T>* x) { return !IsEmpty(x)? x->height: -1; }
 
 /**
  * @brief Get @c x subtree min depth
@@ -188,7 +188,7 @@ int Height(Node<T>* x) { return !IsEmpty(x)? x->height: -1; }
  * @return tree min depth
  */
 template <typename T>
-int MinDepth(Node<T>* x) { return !IsEmpty(x)? x->minDepth: INT_MAX; }
+int MinDepth(const Node<T>* x) { return !IsEmpty(x)? x->minDepth: INT_MAX; }
 
 /**
  * @brief Get @c x subtree max depth
@@ -199,7 +199,7 @@ int MinDepth(Node<T>* x) { return !IsEmpty(x)? x->minDepth: INT_MAX; }
  * @return tree max depth
  */
 template <typename T>
-int MaxDepth(Node<T>* x) { return !IsEmpty(x)? x->maxDepth: -INT_MAX; }
+int MaxDepth(const Node<T>* x) { return !IsEmpty(x)? x->maxDepth: -INT_MAX; }
 
 /**
  * @brief Get @c x node depth
@@ -210,7 +210,7 @@ int MaxDepth(Node<T>* x) { return !IsEmpty(x)? x->maxDepth: -INT_MAX; }
  * @return node depth
  */
 template <typename T>
-int Depth(Node<T>* x) { return !IsEmpty(x)? x->depth: -INT_MAX; }
+int Depth(const Node<T>* x) { return !IsEmpty(x)? x->depth: -INT_MAX; }
 
 /**
  * @brief Checks if the @c x node parent link is a red link
@@ -221,7 +221,7 @@ int Depth(Node<T>* x) { return !IsEmpty(x)? x->depth: -INT_MAX; }
  * @return @c true or @c false
  */
 template <typename T>
-bool IsRedLink(Node<T>* x) { return !IsEmpty(x)? x->color == RED : false; }
+bool IsRedLink(const Node<T>* x) { return !IsEmpty(x)? x->color == RED : false; }
 
 /**
  * @brief Updates @c x node size
@@ -635,7 +635,6 @@ std::pair<Node<T>*, Node<T>*> ExtractMin(Node<T>* t) {
     if (IsEmpty(t)) throw std::runtime_error("Extract from an empty");
     Node<T>* minNode = Min(t);
     Node<T>* h = RemoveMin(t);
-    Detach(minNode);
     return std::make_pair(minNode, h);
 }
 
@@ -650,7 +649,6 @@ std::pair<Node<T>*, Node<T>*> ExtractMax(Node<T>* t) {
     if (IsEmpty(t)) throw std::runtime_error("Extract from an empty");
     Node<T>* maxNode = Max(t);
     Node<T>* h = RemoveMax(t);
-    Detach(maxNode);
     return {h, maxNode};
 }
 

@@ -27,18 +27,28 @@
 
 /* Sucessor & Predecessor */
 
-int Predecessor(Node<int>* h, const int d) {
-    if (!IsEmpty(h->left) && h->left->maxDepth >= d) return Predecessor(h->left, d);
-    if (h->depth >= d) return !IsEmpty(h->left)? Max(h->left)->data : -1;
-    const int pred = Predecessor(h->right, d);
-    return pred != -1? pred : h->data;
+std::pair<int, int> Predecessor(const Node<int>*h, const int d) {
+    assert(MaxDepth(h) >= d);
+    return PredecessorRec(h, d);
 }
 
-int Successor(Node<int>* h, const int d) {
-    if (!IsEmpty(h->right) && h->right->maxDepth >= d) return Successor(h->right, d);
-    if (h->depth >= d) return !IsEmpty(h->right)? Min(h->right)->data : -1;
-    const int suc = Successor(h->left, d);
-    return suc != -1? suc : h->data;
+std::pair<int, int> PredecessorRec(const Node<int>* h, const int d) {
+    if (MaxDepth(h->left) >= d) return Predecessor(h->left, d);
+    if (h->depth >= d) return std::make_pair( !IsEmpty(h->left)? Max(h->left)->data : -1 , h->data);
+    auto [pred, tmkey] = Predecessor(h->right, d);
+    return pred != -1? std::make_pair(pred, tmkey) : std::make_pair(h->data, tmkey);
+}
+
+std::pair<int, int> Successor(const Node<int>* h, const int d) {
+    assert(MaxDepth(h) >= d);
+    return SuccessorRec(h, d);
+}
+
+std::pair<int, int> SuccessorRec(const Node<int>* h, const int d) {
+    if (MaxDepth(h->right) >= d) return Successor(h->right, d);
+    if (h->depth >= d) return std::make_pair(!IsEmpty(h->right)? Min(h->right)->data : -1, h->data);
+    auto [suc, tmkey] = Successor(h->left, d);
+    return suc != -1? std::make_pair(suc, tmkey) : std::make_pair(h->data, tmkey);
 }
 
 /* -------------------------------------------------- */
@@ -47,104 +57,102 @@ int Successor(Node<int>* h, const int d) {
 
 Node<int>* SearchTango(Node<int>* root, const int k) {
 
-    for (auto [q, p] = Search(root, k); IsExternal(q); std::tie(q, p) = Search(root, k))
-        root = Tango(root, q, p); // Updates the preferred path
+    for (auto [q, p] = Search(root, k); IsExternal(q); std::tie(q, p) = Search(root, k)) {
+        root = Tango(root, q, p); // updates the preferred path
+        std::cout << "----------------" << std::endl;
+        ShowTango(root);
+        std::cout << "----------------" << std::endl;
+    }
 
     return root;
 }
 
 Node<int>* Tango(Node<int>* h, Node<int>* q, Node<int>* p) {
-    enum Side {LEFT, RIGHT}; Side side;
-
-    if (p->left == q) {  // Save min(q).left pointer
-        side = LEFT;
-        q->type = REGULAR; // To perform Min operation
-        Node<int>* min = Min(q);
-        q->type = EXTERNAL;
-        p->left = min->left;
-        min->left = GetDummy<int>();
-    }
-    else { // Save max(q).right pointer
-        side = RIGHT;
-        q->type = REGULAR; // To perform Max operation
-        Node<int>* max = Max(q);
-        q->type = EXTERNAL;
-        p->right = max->right;
-        max->right = GetDummy<int>();
-    }
 
     if (h->maxDepth < q->minDepth) { // Rx is empty
-        if (side == LEFT) {
-            auto [tl, pp, tg] = Split(h, p->data);
 
+        if (p->left == q) {  // Save min(q).left pointer
             q->type = REGULAR;
-            Node<int>* tr = Join(q, pp, tg);
+            auto [min, qq] = ExtractMin(q);
+            p->left = min->left;
+            Detach(min);
+            min->left = GetDummy<int>();
 
-            auto [x, hh] = ExtractMin(tr);
-            // x is min(q), the x->left & x->right pointers are safe (save in the beginning and by join operation)
-            assert(IsDummy(x->left) && IsDummy(x->right));
+            auto [tl, y, tg] = Split(h, p->data);
 
-            return Join(tl, x, hh);
-        } else {
-            auto [tl, pp, tg] = Split(h, p->data);
+            Node<int>* taux = Join(qq, y, tg);
 
-            q->type = REGULAR;
-            Node<int>* tr = Join(tl, pp, q);
-
-            auto [hh, x] = ExtractMax(tr);
-            // x is max(q), the x->left & x->right pointers are safe (save in the beginning and by join operation)
-            assert(IsDummy(x->left) && IsDummy(x->right));
-
-            return Join(hh, x, tg);
+            return Join(tl, min, taux);
         }
+        else { // Save max(q).right pointer
+            q->type = REGULAR; // To perform Max operation
+            auto [qq, max] = ExtractMax(q);
+            p->right = max->right;
+            Detach(max);
+            max->right = GetDummy<int>();
+
+            auto [tl, y, tg] = Split(h, p->data);
+
+            Node<int>* taux = Join(tl, y, qq);
+
+            return Join(taux, max, tg);
+        }
+
     } else { // Rx is not empty
 
-        const int d = q->minDepth, l = Predecessor(h, d), r = Successor(h, d);
+        const int d = q->minDepth;
+        auto [l, tmkey] = Predecessor(h, d);
+        auto [r, ignore] = Successor(h, d);
 
-        Node<int>* taux; Node<int>* xl; Node<int>* tl; Node<int>* tpp;
+        Node<int>* qq; Node<int>* max; Node<int>* min;
+
+        q->type = REGULAR; // To perform Max-Min operation
+        if (tmkey < q->data) {
+            std::tie(qq, max) = ExtractMax(q);
+            p->right = max->right;
+            max->right = GetDummy<int>();
+            Detach(max);
+        } else {
+            std::tie(min, qq) = ExtractMin(q);
+            p->left = min->left;
+            min->left = GetDummy<int>();
+            Detach(min);
+        }
+
+        Node<int>* ta; Node<int>* xl; Node<int>* tl; Node<int>* tpp;
         Node<int>* tm; Node<int>* xg; Node<int>* tg; Node<int>* tp;
 
-        if (l == -1) { // don't have any keys smaller or equal to ll
-            taux = h;
+        if (l == -1) { // don't have any keys smaller or equal to l
+            ta = h;
             xl = GetDummy<int>();
         }
-        else std::tie(tl, xl, taux) = Split(h, l);
+        else std::tie(tl, xl, ta) = Split(h, l);
 
-        if (r == -1) { // don't have any keys greater or equal to rr
-            tm = taux;
+        if (r == -1) { // don't have any keys greater or equal to r
+            tm = ta;
             xg = GetDummy<int>();
         }
-        else std::tie(tm, xg, tg) = Split(taux, r);
-
+        else std::tie(tm, xg, tg) = Split(ta, r);
 
         tm->type = EXTERNAL;
-        q->type = REGULAR;
 
         if (tm->data < q->data) {
             if (IsDummy(xl)) tp = tm; // Don't split in tl, xl
             else tp = Join(tl, xl, tm);
 
-            if (IsDummy(xg)) tpp = tp;
-            else tpp = Join(tp, xg, q);
-            auto [hh, x] = ExtractMax(tpp);
+            assert(!IsDummy(xg));
+            tpp = Join(tp, xg, qq);
 
-            // x is max(q), the x->left & x->right pointers are safe (save in the beginning and by join operation)
-            assert(IsDummy(x->left) && IsDummy(x->right));
+            return Join(tpp, max, tg);
 
-            return Join(hh, x, tg);
-
-        }
-        else {
+        } else {
             if (IsDummy(xg)) tp = tm; // Don't split in xg, tg
             else tp = Join(tm, xg, tg);
 
-            if (IsDummy(xl)) tpp = tp;
-            else tpp = Join(q, xl, tp);
-            auto [x, hh] = ExtractMin(tpp);
+            assert(!IsDummy(xl));
+            tpp = Join(qq, xl, tp);
 
-            assert(IsDummy(x->left) && IsDummy(x->right));
-
-            return Join(tl, x, hh);
+            return Join(tl, min, tpp);
         }
     }
 }
@@ -179,7 +187,7 @@ void ShowTangoRec(Node<int>* h, const int d) {
     if (!IsDummy(h)) {
         ShowTangoRec(h->left, d + 3);
         std::cout << std::string(d, ' ');
-        std::cout << (h->type == REGULAR? RED_COLOR : RESET) << "(" << h->data << ")" << std::endl;
+        std::cout << (h->type == REGULAR? RED_COLOR : RESET) << "(" << h->data << ", d=" << h->depth <<  ")" << std::endl;
         ShowTangoRec(h->right, d + 3);
     }
 }

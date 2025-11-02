@@ -13,7 +13,7 @@ def main ():
 
     print(n)
     for i in range(q):
-        print(f'1 {rnd.randrange(start=1, stop=n, step=1)}')
+        print(f'1 {rnd.randint(1, n)}')
 
 if __name__ == "__main__":
     main()

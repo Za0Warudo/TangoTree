@@ -20,6 +20,9 @@
 const std::string RESET = "\033[0m";
 const std::string RED_COLOR = "\033[31m";
 
+// DEBUG variable
+constexpr bool DEBUG = false;
+
 /* -------------------------------------------------- */
 
 /* Build functions */
@@ -50,7 +53,7 @@ Node<int>* TangoBuildRec(int l, int r, int d);
 /* Search functions */
 
 /**
- * @brief Find the predecessor key of the h tree and d depth
+ * @brief Find the smallest key in the tree with depth at least d, and it's predecessor
  *
  * Finds, if the tree contains one, the predecessor key of the h tree and d depth.
  *
@@ -67,7 +70,7 @@ Node<int>* TangoBuildRec(int l, int r, int d);
 std::pair<int, int> Predecessor(const Node<int> *h, int d);
 
 /**
- * @brief Recursive method to obtain the predecessor of d depth in the tree h
+ * @brief Recursive method to obtain the l and l' of d depth in the tree h
  *
  * @param h the subtree root node
  * @param d the cut depth
@@ -77,7 +80,7 @@ std::pair<int, int> PredecessorRec(const Node<int>* h, int d);
 
 
 /**
- * @brief Find the successor key of the h tree and d depth
+ * @brief Find the greatest key in the tree with depth at least d, and it's successor
  *
  * Finds, if the tree contains one, the successor key of the h tree and d depth.
  *
@@ -94,7 +97,7 @@ std::pair<int, int> PredecessorRec(const Node<int>* h, int d);
 std::pair<int, int> Successor(const Node<int>* h, int d);
 
 /**
- * @brief Recursive method to obtain the sucessor of d depth in the h tree
+ * @brief Recursive method to obtain r and r' of d depth in the h tree
  * @param h the subtree root node
  * @param d the cut depth
  * @return the sucessor key

@@ -274,16 +274,14 @@ void Update(Node<T>* x) {
  */
 template <typename T>
 std::pair<Node<T>*, Node<T>*> Detach(Node<T>* x) {
-    if (!IsEmpty(x)) {
-        Node<T>* l = x->left;
-        Node<T>* r = x->right;
-        x->left = GetDummy<T>();
-        x->right = GetDummy<T>();
-        Update(x);
-        x->color = BLACK;
-        return std::make_pair(l, r);
-    }
-    return std::make_pair(GetDummy<T>(), GetDummy<T>());
+    assert(!IsDummy(x));
+    Node<T>* l = x->left;
+    Node<T>* r = x->right;
+    x->left = GetDummy<T>();
+    x->right = GetDummy<T>();
+    x->color = BLACK;
+    Update(x);
+    return std::make_pair(l, r);
 }
 
 /*---------------------------------------------*/
@@ -535,7 +533,6 @@ Node<T>* RemoveMin(Node<T>* t) {
 template <typename T>
 Node<T>* RemoveMinRec(Node<T>* h) {
     if (IsEmpty(h->left)) return h->right;
-
     if (!IsRedLink(h->left) && !IsRedLink(h->left->left)) h = MoveRedLeft(h);
     h->left = RemoveMinRec(h->left);
     return Balance(h);
@@ -570,7 +567,7 @@ template <typename T>
 Node<T>* RemoveMaxRec(Node<T>* h) {
     if (IsRedLink(h->left)) h = RotateRight(h);
 
-    if (IsExternalOrDummy(h->right)) return h->left;
+    if (IsEmpty(h->right)) return h->left;
 
     if (!IsRedLink(h->right) && !IsRedLink(h->right->left)) h = MoveRedRight(h);
 
@@ -649,7 +646,7 @@ std::pair<Node<T>*, Node<T>*> ExtractMax(Node<T>* t) {
     if (IsEmpty(t)) throw std::runtime_error("Extract from an empty");
     Node<T>* maxNode = Max(t);
     Node<T>* h = RemoveMax(t);
-    return {h, maxNode};
+    return std::make_pair(h, maxNode);
 }
 
 /* Split & Join functions */
@@ -702,7 +699,6 @@ Node<T>* JoinRec(Node<T>* t1, Node<T>* x, Node<T>* t2) {
     return Balance(x);
 }
 
-
 /**
  * @brief Splits the rooted tree at node @c y into two trees @c L, @c R and a node @c x. Where all keys in @c L are less than @c k,
  * all keys in @c R are greater than @c k and @c x.key = @c  k
@@ -720,7 +716,7 @@ std::tuple<Node<T>*, Node<T>*, Node<T>*> Split(Node<T>* y, T k) {
 
     auto [L, x, R] = SplitRec(y, k);
 
-    assert(Check(L) && Check(x) & Check(R));
+    assert(Check(L) && Check(x) && Check(R));
 
     return std::make_tuple(L, x, R);
 }

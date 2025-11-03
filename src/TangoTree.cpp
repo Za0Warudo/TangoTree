@@ -19,7 +19,7 @@
  */
 
 /* Includes */
-#include "TangoTree.h"
+#include "../TangoTree.h"
 #include <iostream>
 
 

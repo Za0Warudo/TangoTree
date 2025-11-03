@@ -22,7 +22,7 @@
  */
 
 /* Includes */
-#include "RedBlackTree.h"
+#include "../RedBlackTree.h"
 #include <iostream>
 #include <map>
 

@@ -22,68 +22,64 @@
  */
 
 /* Includes */
-#include "../RedBlackTree.h"
-#include <iostream>
+#include "RedBlackTree.h"
 #include <map>
 
 int main () {
-    std::map<int, Node<int>*> tree_map;
+
+    std::map<int, Node<int>*> trees; // map of trees
+
     int operation, id, val;
+
     while (std::cin >> operation) {
         switch (operation) {
-            case 1: {
+            case 1: {  // Insert
                 std::cin >> id >> val;
-                if (tree_map.contains(id)) tree_map[id] = Insert(tree_map[id], val);
+                if (trees.contains(id)) trees[id] = Insert(trees[id], val);
                 else {
-                    // Initializes the new tree
-                    tree_map[id] = Initialize<int>();
-                    tree_map[id] = Insert(tree_map[id], val);
+                    // Initializes the new tree and inserts val
+                    trees[id] = Initialize<int>();
+                    trees[id] = Insert(trees[id], val);
                 }
                 break;
-            }
-            case 2: {
+            } case 2: { // Contain
                 std::cin >> id >> val;
-                std::cout << (Contains((tree_map.contains(id)? tree_map[id] : GetDummy<int>()), val)? "True" : "False") << std::endl;
+                std::cout << (Contains(trees.contains(id)? trees[id] : GetDummy<int>(), val)? "True" : "False") << std::endl;
                 break;
-            }
-            case 3: {
+            } case 3: { // Remove
                 std::cin >> id >> val;
-                if (tree_map.contains(id)) { tree_map[id] = Remove(tree_map[id], val); }
+                if (trees.contains(id)) trees[id] = Remove(trees[id], val);
                 else std::cout << "Invalid ID" << std::endl;
                 break;
-            }
-            case 4: {
+            } case 4: { // Join
                 int id1, id2; std::cin >> id1 >> val >> id2;
-                Node<int>* joinedTree = Join(
-                                            tree_map.contains(id)? tree_map[id1] : GetDummy<int>(),
-                                            new Node<int>(val),
-                                            tree_map.contains(id)? tree_map[id2] : GetDummy<int>()
-                                            );
-                Show(joinedTree);
+                Node<int>* t3 = Join(
+                    trees.contains(id)? trees[id1] : GetDummy<int>(),
+                    new Node(val),
+                    trees.contains(id)? trees[id2] : GetDummy<int>()
+                    );
+                Show(t3);
                 break;
-            }
-            case 5: {
+            } case 5: { // Split
                 int k; std::cin >> id >> k;
-                if (tree_map.contains(id)) {
-                    auto [L, x, R] = Split(tree_map[id], k);
-                    std::cout << "L tree:" << std::endl;
+                if (trees.contains(id)) {
+                    auto [L, x, R] = Split(trees[id], k);
+                    std::cout << "-------- L --------" << std::endl;
                     Show(L);
-                    std::cout << "x node:" << std::endl;
+                    std::cout << "-------- x --------" << std::endl;
                     Show(x);
-                    std::cout << "R tree:" << std::endl;
+                    std::cout << "-------- R --------" << std::endl;
                     Show(R);
+                    std::cout << "-------------------" << std::endl;
                 }
                 else std::cout << "Invalid ID" << std::endl;
-
                 break;
-            }
-            case 6: {
+            } case 6: {
                 std::cin >> id;
-                if (tree_map.contains(id)) { Show(tree_map[id]); }
+                if (trees.contains(id))  Show(trees[id]);
                 else std::cout << "Invalid ID" << std::endl;
                 break;
-            }
-            default:
+            } default:
                 std::cout << "Invalid Operation" << std::endl;
                 break;
         }

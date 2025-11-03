@@ -2,11 +2,7 @@
 cmake-build-debug
 .venv
 
-Input
-TangoTree
-RedBlackTree
-*.o
-*.d
-a.out
-main.cpp
+bin
+test
+
 CMakeLists.txt

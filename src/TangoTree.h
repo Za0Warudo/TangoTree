@@ -65,7 +65,7 @@ Node<int>* TangoBuildRec(int l, int r, int d);
  *
  * @param h Tree root node
  * @param d Cut depth
- * @return The predecessor key
+ * @return a pair containing the smallest key and the predecessor
  */
 std::pair<int, int> Predecessor(const Node<int> *h, int d);
 
@@ -74,7 +74,7 @@ std::pair<int, int> Predecessor(const Node<int> *h, int d);
  *
  * @param h the subtree root node
  * @param d the cut depth
- * @return the predecessor key
+ * @return a pair containing l and l'
  */
 std::pair<int, int> PredecessorRec(const Node<int>* h, int d);
 
@@ -92,7 +92,7 @@ std::pair<int, int> PredecessorRec(const Node<int>* h, int d);
  *
  * @param h Tree root node
  * @param d Cut depth
- * @return The successor key
+ * @return a pair containing the greatest key and the successor
  */
 std::pair<int, int> Successor(const Node<int>* h, int d);
 
@@ -100,7 +100,7 @@ std::pair<int, int> Successor(const Node<int>* h, int d);
  * @brief Recursive method to obtain r and r' of d depth in the h tree
  * @param h the subtree root node
  * @param d the cut depth
- * @return the sucessor key
+ * @return a pair contaning r and r'
  */
 std::pair<int, int> SuccessorRec(const Node<int> *h, int d);
 

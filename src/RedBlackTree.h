@@ -1,14 +1,14 @@
 /**
-*  @file RedBlackTree.h
- * @brief Defines the Red-Black Tree data structure
+ * @file RedBlackTree.h
+ * @brief Defines the Red-Black Tree key structure
  *
- * The file provides the declaration for the Red-Black Tree data structure,
- * including the basic functions and split join for tango tree implementation.
+ * This file provides the declaration of the Red-Black Tree key structure,
+ * including the basic core functions and Split and Join operations used in Tango Tree key structure.
  *
- * @date October 2025
+ * @date November 2025
  * @version 1.0.1
  * @author Za0Warudo
- * @note This implementation is only used in an auxiliary way for the tango tree data structure.
+ * @note This implementation is design to feed the Tango Tree key structure needs
  */
 
 #ifndef REDBLACKTREE_H
@@ -16,12 +16,11 @@
 
 /* Includes */
 #include <algorithm>
+#include <climits>
 #include <cassert>
 #include <iostream>
-#include <queue>
+#include <stdexcept>
 #include <tuple>
-#include <bits/ostream.tcc>
-#include <climits>
 
 /*---------------------------------------------*/
 
@@ -32,18 +31,18 @@
  * @brief Encode link colors
  */
 enum Color {
-    RED,
-    BLACK
+    RED,        // Red link
+    BLACK       // Black link
 };
 
 /**
- * @enum NodeType
+ * @enum Type
  * @brief Encode node type
  */
-enum NodeType {
-    REGULAR,
-    EXTERNAL,
-    DUMMY          // Similarly to null
+enum Type {
+    REGULAR,        // In tree
+    EXTERNAL,       // Out tree
+    DUMMY           // Out absolute (null like)
 };
 
 /*---------------------------------------------*/
@@ -51,12 +50,12 @@ enum NodeType {
 /* Node definition */
 
 /**
- * @brief Node struct used in the Red-Black Tree
- * @tparam T data stored in the node (also the key value)
+ * @brief Node struct
+ * @tparam T key type
  */
 template <typename T>
 struct Node {
-    T data;                             // Data (also the key)
+    T key;                              // Key
     Node *left, *right;                 // Left & Right children
     int size;                           // Tree size
     int height;                         // Black height
@@ -64,18 +63,25 @@ struct Node {
     int maxDepth;                       // Tree max depth
     int minDepth;                       // Tree min depth
     Color color;                        // Parent link color
-    NodeType type;                      // Node type
+    Type type;                          // Node type
 
     /**
-     * @brief Builds a new node
-     * @param data node data (also the key)
+     * @brief Builds a new node with k key
+     * @param k node key
      * @param c node color, default is RED
      * @param t node type, default is REGULAR
      */
-    explicit Node(T data, const Color c = RED,  const NodeType t = REGULAR):
-    data(data), left(nullptr), right(nullptr),
-    size(1), height(0), depth(INT_MAX), maxDepth(-INT_MAX), minDepth(INT_MAX),
-    color(c), type(t) {}
+    explicit Node(T k, const Color c = RED,  const Type t = REGULAR):
+    key(k),
+    left(nullptr),
+    right(nullptr),
+    size(1),
+    height(0),
+    depth(INT_MAX),
+    maxDepth(-INT_MAX),
+    minDepth(INT_MAX),
+    color(c),
+    type(t) {}
 };
 
 /*---------------------------------------------*/
@@ -89,7 +95,7 @@ template <typename T>
 Node<T>* dummy = new Node<T>(T(), BLACK, DUMMY);
 
 /**
- * @brief Returns the dummy node
+ * @brief Get the dummy node (wrapper)
  */
 template <typename T>
 Node<T>* GetDummy() { return dummy<T>; }
@@ -100,21 +106,21 @@ Node<T>* GetDummy() { return dummy<T>; }
 
 /**
  * @brief Initializes a new empty left leaning Red-Black Tree
- * @return the root node of new tree
+ * @return the root node of new tree (dummy)
  */
 template <typename T>
 Node<T>* Initialize() { return GetDummy<T>(); }
 
 /**
- * @brief Initializes a new node
- * @param data node data
+ * @brief Initializes a new node (fill the left and right pointers with the dummy node)
+ * @param key node key
  * @return the new node
  */
 template <typename T>
-Node<T>* BuildNode(T data) {
-    Node<T>* node = new Node<T>(data);
+Node<T>* BuildNode(T key) {
+    auto* node = new Node<T>(key);
 
-    // set dummy children pointers
+    // set children to dummy
     node->left = GetDummy<T>();
     node->right = GetDummy<T>();
 
@@ -268,15 +274,15 @@ void Update(Node<T>* x) {
 }
 
 /**
- * @brief Removes the left and right children of the given node
+ * @brief Removes the left and right children of the given node and return it
  * @param x the node
- * @return left and right children
+ * @return a pair containing the left and the right children
  */
 template <typename T>
 std::pair<Node<T>*, Node<T>*> Detach(Node<T>* x) {
     assert(!IsDummy(x));
-    Node<T>* l = x->left;
-    Node<T>* r = x->right;
+    Node<T>* l = x->left;   // save left pointer
+    Node<T>* r = x->right;  // save right pointer
     x->left = GetDummy<T>();
     x->right = GetDummy<T>();
     x->color = BLACK;
@@ -295,7 +301,7 @@ std::pair<Node<T>*, Node<T>*> Detach(Node<T>* x) {
  */
 template <typename T>
 Node<T>* RotateRight(Node<T>* h) {
-    assert(IsRedLink(h->left));
+    assert(IsRedLink(h->left)); // only rotates red links
 
     // rotation
     Node<T>* y = h->left;
@@ -318,7 +324,7 @@ Node<T>* RotateRight(Node<T>* h) {
  */
 template <typename T>
 Node<T>* RotateLeft(Node<T>* h) {
-    assert(IsRedLink(h->right));
+    assert(IsRedLink(h->right)); // only rotates red links
 
     // rotation
     Node<T>* y = h->right;
@@ -341,12 +347,12 @@ Node<T>* RotateLeft(Node<T>* h) {
  */
 template <typename T>
 Node<T>* MoveRedLeft (Node<T>* h) {
-    assert(IsRedLink(h) && !IsRedLink(h->left) && !IsRedLink(h->left->left));
+    assert(IsRedLink(h) && !IsRedLink(h->left) && !IsRedLink(h->left->left)); // only move red link if not already in there
 
     FlipColors(h); // throw h red link to it's children
 
     if (IsRedLink(h->right->left)) {
-        // got a 4-node, need fix
+        // got a 4-node (need fix)
         h->right = RotateRight(h->right);
         h = RotateLeft(h);
         FlipColors(h);
@@ -361,12 +367,12 @@ Node<T>* MoveRedLeft (Node<T>* h) {
  */
 template <typename T>
 Node<T>* MoveRedRight (Node<T>* h) {
-    assert(IsRedLink(h) && !IsRedLink(h->right) && !IsRedLink(h->right->left));
+    assert(IsRedLink(h) && !IsRedLink(h->right) && !IsRedLink(h->right->left)); // only mode red link if not already in there
 
     FlipColors(h); // throw h red link to it's children
 
     if (IsRedLink(h->left->left)) {
-        // got a 4-node, need fix
+        // got a 4-node (need fix)
         h = RotateRight(h);
         FlipColors(h);
     }
@@ -380,8 +386,8 @@ Node<T>* MoveRedRight (Node<T>* h) {
 template <typename T>
 void FlipColors(Node<T>* h) {
 
-    assert(!IsEmpty(h) && !IsEmpty(h->left) && !IsEmpty(h->right));
-    assert(h->color != h->left->color && h->color != h->right->color);
+    assert(!IsEmpty(h) && !IsEmpty(h->left) && !IsEmpty(h->right)); // h and it's children must be no empty
+    assert(h->color != h->left->color && h->color != h->right->color); // children color must be opposite to h color
 
     h->color = (h->color == RED) ? BLACK : RED;
     h->left->color = h->left->color == RED ? BLACK : RED;
@@ -412,14 +418,14 @@ Node<T>* Balance(Node<T>* x) {
 /* Insert functions */
 
 /**
- * @brief Inserts the data in the tree @c t
+ * @brief Inserts the key in the tree @c t
  * @param h the tree root node
- * @param data the new data to be inserted in the tree
+ * @param key the new key to be inserted in the tree
  * @return the new root tree
  */
 template <typename T>
-Node<T>* Insert(Node<T>* h, T data) {
-    h = InsertRec(h, data);
+Node<T>* Insert(Node<T>* h, T key) {
+    h = InsertRec(h, key);
     h->color = BLACK;
 
     assert(Check(h));
@@ -430,16 +436,16 @@ Node<T>* Insert(Node<T>* h, T data) {
 /**
  * @brief Recursive auxiliar insert method
  * @param h the tree node
- * @param data the new data to be inserted
+ * @param key the new key to be inserted
  * @return the root subtree
  */
 template <typename T>
-Node<T>* InsertRec(Node<T>* h, T data) {
-    if (IsEmpty(h)) return BuildNode(data);
+Node<T>* InsertRec(Node<T>* h, T key) {
+    if (IsEmpty(h)) return BuildNode(key);
 
-    if (data < h->data) h->left = InsertRec(h->left, data);
-    else if (data > h->data) h->right = InsertRec(h->right, data);
-    else h->data = data; // unique key
+    if (key < h->key) h->left = InsertRec(h->left, key);
+    else if (key > h->key) h->right = InsertRec(h->right, key);
+    else h->key = key; // unique key
 
     return Balance(h);
 }
@@ -449,26 +455,26 @@ Node<T>* InsertRec(Node<T>* h, T data) {
 /* Query functions */
 
 /**
- * @brief Checks if the tree @h contains the @c data key
+ * @brief Checks if the tree @h contains the @c key key
  * @param h the tree
- * @param data the new data to be search
+ * @param key the key to be search
  * @return @c true or @c false.
  */
 template <typename T>
-bool Contains(Node<T>* h, T data) { return !IsEmpty(Search(h, data).first); }
+bool Contains(Node<T>* h, T key) { return !IsEmpty(Search(h, key).first); }
 
 /**
  * @brief Finds the node containing the given key, and it's parent, return the dummy node otherwise
  * @param h the tree
- * @param data the new data to be search
+ * @param key the new key to be search
  * @param p the current level parent
  * @return the node and it's parent
  */
 template <typename T>
-std::pair<Node<T>*, Node<T>*> Search(Node<T>* h, T data, Node<T>* p = GetDummy<T>()) {
+std::pair<Node<T>*, Node<T>*> Search(Node<T>* h, T key, Node<T>* p = GetDummy<T>()) {
     if (!IsEmpty(h)) {
-        if (data < h->data) return Search(h->left, data, h);
-        if (data > h->data) return Search(h->right, data, h);
+        if (key < h->key) return Search(h->left, key, h);
+        if (key > h->key) return Search(h->right, key, h);
     }
     return {h, p};
 }
@@ -532,7 +538,7 @@ Node<T>* RemoveMin(Node<T>* t) {
  */
 template <typename T>
 Node<T>* RemoveMinRec(Node<T>* h) {
-    if (IsEmpty(h->left)) return h->right;
+    if (IsEmpty(h->left)) return h->right; // save pointer
     if (!IsRedLink(h->left) && !IsRedLink(h->left->left)) h = MoveRedLeft(h);
     h->left = RemoveMinRec(h->left);
     return Balance(h);
@@ -567,7 +573,7 @@ template <typename T>
 Node<T>* RemoveMaxRec(Node<T>* h) {
     if (IsRedLink(h->left)) h = RotateRight(h);
 
-    if (IsEmpty(h->right)) return h->left;
+    if (IsEmpty(h->right)) return h->left; // save pointer
 
     if (!IsRedLink(h->right) && !IsRedLink(h->right->left)) h = MoveRedRight(h);
 
@@ -604,17 +610,17 @@ Node<T>* Remove(Node<T>* h, T key) {
  */
 template <typename T>
 Node<T>* RemoveRec(Node<T>* h, T key) {
-    if (key < h->data) {
+    if (key < h->key) {
         if (!IsRedLink(h->left) && !IsRedLink(h->left->left)) h = MoveRedLeft(h);
         h->left = RemoveRec(h->left, key);
     }
     else {
         if (IsRedLink(h->left)) h = RotateRight(h);
-        if (key == h->data && IsEmpty(h->right)) return h->right;
+        if (key == h->key && IsEmpty(h->right)) return h->right;
         if (!IsRedLink(h->right) && !IsRedLink(h->right->left) ) h = MoveRedRight(h);
-        if (key == h->data) {
+        if (key == h->key) {
             Node<T>* x = Min(h->right);
-            h->data = x->data;
+            h->key = x->key;
             h->right = RemoveMinRec(h->right);
         }
         else h->right = RemoveRec(h->right, key);
@@ -623,16 +629,16 @@ Node<T>* RemoveRec(Node<T>* h, T key) {
 }
 
 /**
- * @brief Splits the minimum element of the BST t from the remaining tree
+ * @brief Splits the minimum element of the tree t from the remaining tree
  * @param t the tree root node
  * @return the min node and the new tree root
  */
 template <typename T>
 std::pair<Node<T>*, Node<T>*> ExtractMin(Node<T>* t) {
     if (IsEmpty(t)) throw std::runtime_error("Extract from an empty");
-    Node<T>* minNode = Min(t);
+    Node<T>* min = Min(t);
     Node<T>* h = RemoveMin(t);
-    return std::make_pair(minNode, h);
+    return std::make_pair(min, h);
 }
 
 
@@ -644,9 +650,9 @@ std::pair<Node<T>*, Node<T>*> ExtractMin(Node<T>* t) {
 template <typename T>
 std::pair<Node<T>*, Node<T>*> ExtractMax(Node<T>* t) {
     if (IsEmpty(t)) throw std::runtime_error("Extract from an empty");
-    Node<T>* maxNode = Max(t);
+    Node<T>* max = Max(t);
     Node<T>* h = RemoveMax(t);
-    return std::make_pair(h, maxNode);
+    return std::make_pair( max, h);
 }
 
 /* Split & Join functions */
@@ -662,9 +668,9 @@ std::pair<Node<T>*, Node<T>*> ExtractMax(Node<T>* t) {
 template <typename T>
 Node<T>* Join(Node<T>* t1, Node<T>* x, Node<T>* t2) {
 
-    assert(IsDummy(x->left) && IsDummy(x->right));
-    assert(IsEmpty(t1) || Max(t1)->data < x->data);
-    assert(IsEmpty(t2) || Min(t2)->data > x->data);
+    assert(IsDummy(x->left) && IsDummy(x->right)); // x must have free pointers
+    assert(IsEmpty(t1) || Max(t1)->key < x->key);  // t1 < x
+    assert(IsEmpty(t2) || Min(t2)->key > x->key);  // t2 > x
 
     Node<T>* root = JoinRec(t1, x,  t2);
     root->color = BLACK;
@@ -692,7 +698,7 @@ Node<T>* JoinRec(Node<T>* t1, Node<T>* x, Node<T>* t2) {
         return Balance(t1);
     }
 
-    x->color = RED;
+    x->color = RED; // keeps height balance diff less than or equal to 1
     x->left = t1;
     x->right = t2;
 
@@ -710,7 +716,7 @@ Node<T>* JoinRec(Node<T>* t1, Node<T>* x, Node<T>* t2) {
 template <typename T>
 std::tuple<Node<T>*, Node<T>*, Node<T>*> Split(Node<T>* y, T k) {
 
-    assert(!IsEmpty(y));
+    assert(Contains(y, k)); // k must be a key in the y tree
 
     if (!Contains(y, k)) throw std::runtime_error("key not found");
 
@@ -729,22 +735,22 @@ std::tuple<Node<T>*, Node<T>*, Node<T>*> Split(Node<T>* y, T k) {
  */
 template <typename T>
 std::tuple<Node<T>*, Node<T>*, Node<T>*> SplitRec(Node<T>* h, T k) {
-    if (h->data < k) {
+    if (h->key < k) {
         auto [L, x, R] = SplitRec(h->right, k);
         auto [l, r] = Detach(h);
-        if (!IsEmpty(l)) l->color = BLACK;
+        l->color = BLACK;
         return std::make_tuple(Join(l, h, L), x, R);
     }
-    if (h->data > k) {
+    if (h->key > k) {
         auto [L, x, R] = SplitRec(h->left, k);
         auto [l, r] = Detach(h);
-        if (!IsEmpty(r)) r->color = BLACK;
+        r->color = BLACK;
         return std::make_tuple(L, x, Join(R, h, r));
     }
 
     auto [l, r] = Detach(h);
-    if (!IsEmpty(l)) l->color = BLACK;
-    if (!IsEmpty(r)) r->color = BLACK;
+    l->color = BLACK;
+    r->color = BLACK;
 
     return std::make_tuple(l, h, r);
 }
@@ -772,7 +778,7 @@ template <typename T>
 void Show(Node<T>* t, const int s) {
     if (!IsEmpty(t)) {
         Show(t->left, s + 3);
-        std::cout << std::string(s, ' ') << "(" << t->data
+        std::cout << std::string(s, ' ') << "(" << t->key
         << ", c=" << t->color
         << ", t=" << t->type
         << ", min=" << t->minDepth
@@ -807,8 +813,8 @@ bool IsBST(Node<T>* t) {
 template <typename T>
 bool IsBSTRec(Node<T>* h, Node<T>* min, Node<T>* max) {
     if (IsEmpty(h)) return true;
-    if (!IsEmpty(min) && h->data < min->data) return false;
-    if (!IsEmpty(max) && h->data > max->data) return false;
+    if (!IsEmpty(min) && h->key < min->key) return false;
+    if (!IsEmpty(max) && h->key > max->key) return false;
     return IsBSTRec(h->left, min, h) && IsBSTRec(h->right, h, max);
 }
 
@@ -818,14 +824,14 @@ bool IsBSTRec(Node<T>* h, Node<T>* min, Node<T>* max) {
  * @return @c true or @c false
  */
 template <typename T>
-bool IsBalanced(Node<T>* t) {
+bool IsBalance(Node<T>* t) {
     int black = 0;
     Node<T>* x = t;
     while (!IsEmpty(x)) {
         if (!IsRedLink(x)) black++;
         x = x->left;
     }
-    return IsBalanced(t, black);
+    return IsBalance(t, black);
 }
 
 /**
@@ -835,10 +841,10 @@ bool IsBalanced(Node<T>* t) {
  * @return @c true or @c false
  */
 template <typename T>
-bool IsBalanced(Node<T>* h, int black) {
+bool IsBalance(Node<T>* h, int black) {
     if (IsEmpty(h)) return black == 0;
     if (!IsRedLink(h)) black--;
-    return IsBalanced(h->left, black) && IsBalanced(h->right, black);
+    return IsBalance(h->left, black) && IsBalance(h->right, black);
 }
 
 /**
@@ -868,6 +874,6 @@ bool Is23Rec(Node<T>* h) {
  * @return @c true or @c false
  */
 template <typename T>
-bool Check(Node<T>* r) { return IsBalanced(r) && Is23(r) &&  IsBST(r); }
+bool Check(Node<T>* r) { return IsBalance(r) && Is23(r) &&  IsBST(r); }
 
 #endif //REDBLACKTREE_H

@@ -3,7 +3,9 @@
 
 /**
  * @file RedBlackTree.h
+ *
  * @author Zawarudo (@zawarudo)
+ *
  * @brief A header file for the Red-Black Tree data structure implementation in
  * C++. The implementation has the purpose to be an auxiliary data structure for
  * the implementation of Tango Tree. Some operations are omitted since they are
@@ -13,6 +15,7 @@
  * Red-Black Tree data structure, given by Sedgewick and Wayne in their book
  * "Algorithms". Also the focus is not the optimization or the performance, but
  * rather clarity and correctness for the Tango Tree implementation.
+ *
  * @version 1.0
  * @date 2026-03-07
  */
@@ -20,8 +23,8 @@
 // includes and namespace
 #include <tuple>
 
-#define SHORT_MAX 32767
-#define SHORT_MIN -32768
+#define SHORT_MAX 32767  // maximum value for a short
+#define SHORT_MIN -32768 // minimum value for a short
 
 /**
  * @brief Enum to represent the color of a node in the Red-Black Tree. A node
@@ -88,10 +91,16 @@ Node *Node::nil = [] {
   n->left = n->right =
       n; // The left and right pointers of the nil node point to itself
 
-  n->isExternal = true;    // The nil node is considered an external node
-  n->depth = 0;            // The depth of the nil node is set to 0
-  n->minDepth = SHORT_MIN; // The minimum depth of the nil node is set to 0
-  n->maxDepth = SHORT_MAX; // The maximum depth of the nil node is set to 0
+  n->isExternal = true; // The nil node is considered an external node
+  n->depth = 0;         // The depth of the nil node is set to 0
+
+  n->minDepth = SHORT_MAX; // The minimum depth of the nil node is set to the
+                           // maximum possible value, since it is an external
+                           // node and has no children
+
+  n->maxDepth = SHORT_MIN; // The maximum depth of the nil node is set to the
+                           // minimum possible value, since it is an external
+                           // node and has no children
 
   n->blackHeight = 0; // The height of the nil node is set to 0, it's the unique
                       // node with height 0
@@ -104,13 +113,15 @@ Node *Node::nil = [] {
 /**
  * @brief Create a new node with the given key. The new node is initialized with
  * default values for its fields.
+ *
  * @param key The key value for the new node.
  * @return A pointer to the newly created node.
  */
-Node *newNode(int key);
+Node *newNode(int key, int depth = 0);
 
 /**
  * @brief detach the left and right subtrees of the given node.
+ *
  * @param h The node whose subtrees are to be detached.
  * @return A pair containing the left and right subtrees of the given node.
  */
@@ -118,8 +129,9 @@ std::pair<Node *, Node *> detach(Node *h);
 
 /**
  * @brief Search for a node with a given key in the Red-Black Tree. It returns a
- * pointer to the node if found, or external node it fall-off, if the key is not
- * present in the tree.
+ * pointer to the node if found, or external node it fall-off, meaning that the
+ * key is not present in the tree.
+ *
  * @param h The root of the subtree to search.
  * @param key The key value to search for.
  * @return A pointer to the node with the given key, or an external node if not
@@ -133,6 +145,7 @@ Node *search(Node *root, int key);
  * contains all the nodes with keys greater than the given key, and the node
  * with the given key is returned as well. As a precondition, the key must be
  * present in the tree.
+ *
  * @param h The root of the subtree to split.
  * @param key The key value to split the tree around.
  * @return A tuple containing the left tree, the node with the given key, and
@@ -147,6 +160,7 @@ std::tuple<Node *, Node *, Node *> split(Node *h, int key);
  * precondition, all keys in the left tree must be less than the given node's
  * key, and all keys in the right tree must be greater than the given node's
  * key.
+ *
  * @param leftTree The root of the left tree to join.
  * @param x The node to join between the two trees.
  * @param rightTree The root of the right tree to join.
@@ -156,18 +170,20 @@ std::tuple<Node *, Node *, Node *> split(Node *h, int key);
 Node *join(Node *leftTree, Node *x, Node *rightTree);
 
 /**
- * @brief
+ * @brief Delete the node with the minimum key in the Red-Black Tree. As a
+ * precondition, the tree must not be empty.
  *
- * @param root
- * @return Node*
+ * @param root The root of the subtree from which to delete the minimum node.
+ * @return The root of the subtree after deleting the minimum node.
  */
 Node *deleteMin(Node *root);
 
 /**
- * @brief
+ * @brief Delete the node with the maximum key in the Red-Black Tree. As a
+ * precondition, the tree must not be empty.
  *
- * @param root
- * @return Node*
+ * @param root The root of the subtree from which to delete the maximum node.
+ * @return The root of the subtree after deleting the maximum node.
  */
 Node *deleteMax(Node *root);
 

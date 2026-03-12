@@ -2,6 +2,10 @@
 #include <cassert>
 #include <climits>
 #include <iostream>
+#include <map>
+
+// flag for debugging, set to true to enable debug output, false to disable
+#define DEBUG true
 
 /**************************************************************
  * Axuliary functions definitions
@@ -111,7 +115,7 @@ Node *newNode(int key, int depth);
  * Implementation of the main operations of the Red-Black Tree
  *************************************************************/
 
-Node *newNode(int key, int depth = 0) {
+Node *newNode(int key, int depth) {
   Node *x = new Node(key);        // create new node
   x->left = x->right = Node::nil; // initialize children to nil
   x->isExternal = false;          // set as an internal node
@@ -147,7 +151,7 @@ Node *rotateLeft(Node *h) {
   x->color = h->color; // Copy the color of h to x
   h->color = RED;      // Set h's color to RED
   update(h);           // Update the properties of h after rotation
-  update(x);           // Update the properties of x after rotation 
+  update(x);           // Update the properties of x after rotation
   return x;            // Return the new root of the subtree (x)
 }
 
@@ -272,9 +276,9 @@ Node *joinRec(Node *leftTree, Node *x, Node *rightTree) {
 }
 
 Node *join(Node *leftTree, Node *x, Node *rightTree) {
-  assert(min(leftTree) < x->key &&
+  assert(max(leftTree) < x->key &&
          x->key <
-             max(rightTree)); // Ensure that all keys in the left tree are less
+             min(rightTree)); // Ensure that all keys in the left tree are less
                               // than x's key and all keys in the right tree are
                               // greater than x's key before joining
 
@@ -298,7 +302,7 @@ std::tuple<Node *, Node *, Node *> splitRec(Node *h, int key) {
     auto [left, x, right] = splitRec(h->right, key);
     h->left->color =
         BLACK; // Ensure the left child of h is black before joining
-    return {join(left, h, h->left), x, right};
+    return {join(h->left, h, left), x, right};
   }
 
   auto [left, right] = detach(h);
@@ -444,7 +448,7 @@ bool check(Node *root) {
 /**************************************************************
  * functions for testing and debugging
  **************************************************************/
- 
+
 Node *insert(Node *root, int key);
 Node *insertRec(Node *h, int key);
 void print(Node *root, int indent = 0);
@@ -510,43 +514,135 @@ int max(Node *root) {
       root->right); // Recursively search for the maximum in the right subtree
 }
 
+/**
+ * @brief Delete a node with a given key from the Red-Black Tree, while
+ * maintaining the properties of the tree. As a precondition, the key must be
+ * present in the tree. This functions uses the split and join operations to
+ * remove the node with the given key and then join the resulting left and right
+ * subtrees back together, showing the power of these operations in maintaining
+ * the structure of the Red-Black Tree during deletion.
+ *
+ * @param h The root of the tree
+ * @param key The key to delete
+ * @return The new root of the tree after deletion
+ */
+Node *deleteNode(Node *h, int key) {
+
+  assert(search(h, key) != Node::nil); // Ensure that the key is present in the
+                                       // tree before attempting to delete it
+
+  auto [left, x, right] = split(h, key);
+  // Join the left and right subtrees, excluding the node with the key
+  if (left == Node::nil)
+    return right;
+  if (right == Node::nil)
+    return left;
+
+  // Find a node to use as separator (use min from right)
+  int separator = min(right);
+  right = deleteMin(right);
+  return join(left, newNode(separator), right);
+}
+
 int main() {
-  int n, m;
-  std::cin >> n >> m;
+  std::map<int, Node *> trees; // Map to store trees by ID
 
-  Node *root1 = Node::nil;
-  Node *root2 = Node::nil;
+  int operation, id, val, id2, key;
 
-  for (int i = 1; i <= n; ++i) { // create a Red-Black Tree by inserting n keys
-                                 // read from standard input
-    root1 = insert(root1, i);
-  }
-
-  for (int i = n + 1; i <= m; ++i) {
-    root2 = insert(root2, i);
-  }
-
-  check(root1);
-  check(root2);
-
-  int op;
-
-  while (std::cin >> op) {
-    if (op == 1) {
-      int key;
-      std::cin >> key;
-      auto [left, x, right] = split(root1, key);
-      root1 = join(left, x, right);
-    } else if (op == 2) {
-      int key;
-      std::cin >> key;
-      auto [left, x, right] = split(root2, key);
-      root2 = join(left, x, right);
-    } else if (op == 3) {
-      print(root1);
-    } else if (op == 4) {
-      print(root2);
+  while (std::cin >> operation) {
+    switch (operation) {
+    case 1: { // Insert
+      std::cin >> id >> val;
+      if (trees.count(id) == 0) {
+        trees[id] = Node::nil;
+      }
+      trees[id] = insert(trees[id], val);
+      check(trees[id]); // Check the validity of the tree after insertion
+      if (DEBUG)
+        std::cout << "Inserted " << val << " into tree " << id << std::endl;
+      break;
+    }
+    case 2: { // Contains
+      std::cin >> id >> val;
+      Node *tree = (trees.count(id) > 0) ? trees[id] : Node::nil;
+      bool found = (search(tree, val) != Node::nil);
+      std::cout << (found ? "True" : "False") << std::endl;
+      break;
+    }
+    case 3: { // Remove
+      std::cin >> id >> val;
+      if (trees.count(id) > 0) {
+        trees[id] = deleteNode(trees[id], val);
+        check(trees[id]); // Check the validity of the tree after deletion
+        if (DEBUG)
+          std::cout << "Deleted " << val << " from tree " << id << std::endl;
+      } else {
+        std::cout << "Invalid ID" << std::endl;
+      }
+      break;
+    }
+    case 4: { // Join
+      int id1;
+      std::cin >> id1 >> key >> id2;
+      Node *t1 = (trees.count(id1) > 0) ? trees[id1] : Node::nil;
+      Node *t2 = (trees.count(id2) > 0) ? trees[id2] : Node::nil;
+      Node *separator = newNode(key);
+      Node *result = join(t1, separator, t2);
+      check(result);          // Check the validity of the joined tree
+      trees[id1] = result;    // Store result in first tree's ID
+      trees[id2] = Node::nil; // Clear second tree's ID
+      if (DEBUG)
+        std::cout << "Joined tree " << id1 << " and tree " << id2
+                  << " with separator " << key << std::endl;
+      break;
+    }
+    case 5: { // Split
+      std::cin >> id >> key;
+      if (trees.count(id) > 0) {
+        auto [left, x, right] = split(trees[id], key);
+        std::cout << "-------- L --------" << std::endl;
+        print(left);
+        std::cout << "-------- x --------" << std::endl;
+        print(x);
+        std::cout << "-------- R --------" << std::endl;
+        print(right);
+        std::cout << "-------------------" << std::endl;
+        // Optionally store the split results
+        trees[id] = Node::nil; // Clear original tree's ID
+        check(left);           // Check the validity of the left subtree
+        assert(x->key ==
+               key);  // Check the validity of the node with the given key
+        check(right); // Check the validity of the right subtree
+      } else {
+        std::cout << "Invalid ID" << std::endl;
+      }
+      break;
+    }
+    case 6: { // Print
+      std::cin >> id;
+      if (trees.count(id) > 0) {
+        print(trees[id]);
+      } else {
+        std::cout << "Invalid ID" << std::endl;
+      }
+      break;
+    }
+    case 7: {
+      int n; 
+      std:: cin >> id >> n; 
+      if (trees.count(id) == 0) {
+        trees[id] = Node::nil;
+      }
+      for (int i = 0; i < n; i++) {
+        trees[id] = insert(trees[id], i+1);
+      }
+      break;
+    }
+    default:
+      std::cout << "Invalid Operation" << std::endl;
+      break;
     }
   }
+
   return 0;
 }

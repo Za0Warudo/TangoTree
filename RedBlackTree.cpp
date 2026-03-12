@@ -628,13 +628,13 @@ int main() {
       break;
     }
     case 7: {
-      int n; 
-      std:: cin >> id >> n; 
+      int n;
+      std::cin >> id >> n;
       if (trees.count(id) == 0) {
         trees[id] = Node::nil;
       }
       for (int i = 0; i < n; i++) {
-        trees[id] = insert(trees[id], i+1);
+        trees[id] = insert(trees[id], i + 1);
       }
       break;
     }

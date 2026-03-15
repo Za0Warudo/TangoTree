@@ -8,13 +8,13 @@
 #define DEBUG true
 
 /**************************************************************
- * Axuliary functions definitions
+ * Auxiliary functions definitions
  *************************************************************/
 
 /**
  * @brief Rotate a subtree to the left. This operation is used to maintain the
  * balance of the Red-Black Tree. As a precondition, the right child of h must
- * be red, and h must not be the nil node.
+ * be red. 
  *
  * @param h The root of the subtree to rotate.
  * @return The new root of the subtree after rotation.
@@ -24,7 +24,7 @@ Node *rotateLeft(Node *h);
 /**
  * @brief Rotate a subtree to the right. This operation is used to maintain the
  * balance of the Red-Black Tree. As a precondition, the left child of h must be
- * red, and h must not be the nil node.
+ * red.
  *
  * @param h The root of the subtree to rotate.
  * @return The new root of the subtree after rotation.
@@ -125,18 +125,17 @@ Node *newNode(int key, int depth) {
 }
 
 void update(Node *h) {
-  if (h != Node::nil) {
-    // Update Red-Black Tree properties
-    h->blackHeight =
-        std::max(h->left->blackHeight + h->left->color == BLACK ? 1 : 0,
-                 h->right->blackHeight + 1);
+  assert(h != Node:nil);  
+  // Update Red-Black Tree properties
+  h->blackHeight =
+      std::max(h->left->blackHeight + h->left->color == BLACK ? 1 : 0,
+                h->right->blackHeight + 1);
 
-    // Update Auxiliary tree properties
-    h->minDepth =
-        std::min(std::min(h->left->minDepth, h->right->minDepth), h->depth);
-    h->maxDepth =
-        std::max(std::max(h->left->maxDepth, h->right->maxDepth), h->depth);
-  }
+  // Update Auxiliary tree properties
+  h->minDepth =
+      std::min(std::min(h->left->minDepth, h->right->minDepth), h->depth);
+  h->maxDepth =
+      std::max(std::max(h->left->maxDepth, h->right->maxDepth), h->depth);
 }
 
 Node *rotateLeft(Node *h) {
@@ -238,6 +237,10 @@ std::pair<Node *, Node *> detach(Node *h) {
       rightSubtree}; // Return the detached left and right subtrees as a pair
 }
 
+/**************************************************************
+ * Search *
+ **************************************************************/
+
 Node *search(Node *h, int key) {
   if (h->isExternal || h->key == key)
     return h; // If the node is external or the key matches, return the node
@@ -250,7 +253,7 @@ Node *search(Node *h, int key) {
 }
 
 /**************************************************************
- * Join and split *
+ * Join *
  **************************************************************/
 
 Node *joinRec(Node *leftTree, Node *x, Node *rightTree) {
@@ -291,6 +294,11 @@ Node *join(Node *leftTree, Node *x, Node *rightTree) {
   return y;         // Return the new root of the joined tree
 }
 
+
+/**************************************************************
+ * Split *
+ **************************************************************/
+
 std::tuple<Node *, Node *, Node *> splitRec(Node *h, int key) {
   if (h->key > key) {
     auto [left, x, right] = splitRec(h->left, key);
@@ -321,7 +329,7 @@ std::tuple<Node *, Node *, Node *> split(Node *h, int key) {
 }
 
 Node *deleteMinRec(Node *h) {
-  if (h->left == Node::nil)
+  if (h->left->isExternal)
     return Node::nil; // If the left child of h is nil, then h is the minimum
                       // node, so we return nil to delete it
   if (h->left->color == BLACK &&
@@ -337,7 +345,11 @@ Node *deleteMin(Node *root) {
   assert(root != Node::nil); // Ensure that the root is not the nil node before
                              // deleting the minimum, since we should never
                              // delete from an empty tree
-  return deleteMinRec(root);
+   if (root->left->color == BLACK) 
+        root->color->red; 
+   root = deleteMinRec(root);
+   root->color = BLACK;
+  return root; 
 }
 
 Node *deleteMaxRec(Node *h) {
@@ -346,7 +358,7 @@ Node *deleteMaxRec(Node *h) {
         h); // If the left child of h is red, rotate right to ensure that we are
             // moving down a path with a red link, which allows us to maintain
             // the properties of the Red-Black Tree during deletion
-  if (h->right == Node::nil)
+  if (h->right->isExternal)
     return Node::nil; // If the right child of h is nil, then h is the maximum
                       // node, so we return nil to delete it
   if (h->right->color == BLACK &&
@@ -362,7 +374,11 @@ Node *deleteMax(Node *root) {
   assert(root != Node::nil); // Ensure that the root is not the nil node before
                              // deleting the maximum, since we should never
                              // delete from an empty tree
-  return deleteMaxRec(root);
+    if (h->left->color == BLACK) root->color = BLACK;
+    root = deleteMaxRec(root);
+
+  root->color = BLACK;
+  return root; 
 }
 
 /**************************************************************
@@ -384,7 +400,7 @@ Node *deleteMax(Node *root) {
  * @return true if the subtree is a valid binary search tree, false otherwise.
  */
 bool isBST(Node *root, int min = INT_MIN, int max = INT_MAX) {
-  if (root == Node::nil)
+  if (root->isExternal)
     return true;
   if (root->key < min || root->key > max)
     return false;
@@ -401,7 +417,7 @@ bool isBST(Node *root, int min = INT_MIN, int max = INT_MAX) {
  * @return true if the subtree is balanced, false otherwise.
  */
 bool isBalanced(Node *root) {
-  if (root == Node::nil)
+  if (root->isExternal)
     return true;
   int leftBlackHeight = root->left->blackHeight;
   int rightBlackHeight = root->right->blackHeight;
@@ -419,7 +435,7 @@ bool isBalanced(Node *root) {
  * @return true if the subtree is a valid 2-3 tree, false otherwise.
  */
 bool is23(Node *root) {
-  if (root == Node::nil)
+  if (root->isExternal)
     return true;
   if ((root->color == RED && root->left->color == RED) ||
       root->right->color == RED)
@@ -493,25 +509,16 @@ void print(Node *root, int indent) {
 }
 
 int min(Node *root) {
-  if (root == Node::nil)
-    return INT_MAX; // If the tree is empty, return a large value to indicate no
-                    // minimum
-  if (root->left == Node::nil)
-    return root
-        ->key; // If the left child is nil, then the current node is the minimum
-  return min(
-      root->left); // Recursively search for the minimum in the left subtree
+  if (root->left->isExternal)
+    return root->key; // If the left child is nil, then the current node is the minimum
+  return min(root->left); // Recursively search for the minimum in the left subtree
 }
 
 int max(Node *root) {
-  if (root == Node::nil)
-    return INT_MIN; // If the tree is empty, return a small value to indicate no
-                    // maximum
-  if (root->right == Node::nil)
+  if (root->right->isExternal)
     return root->key; // If the right child is nil, then the current node is the
                       // maximum
-  return max(
-      root->right); // Recursively search for the maximum in the right subtree
+  return max(root->right); // Recursively search for the maximum in the right subtree
 }
 
 /**

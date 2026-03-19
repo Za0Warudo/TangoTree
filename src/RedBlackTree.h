@@ -179,4 +179,21 @@ Node *deleteMin(Node *root);
  */
 Node *deleteMax(Node *root);
 
+/**
+ * @brief Return the minimum key value in the subtree rooted at the given node.
+ * If the subtree is empty, return a large value to indicate no minimum.
+ *
+ * @param root The root of the subtree to search.
+ * @return int The minimum key value in the subtree.
+ */
+int min(Node *root); 
+/**
+ * @brief Return the maximum key value in the subtree rooted at the given node.
+ * If the subtree is empty, return a small value to indicate no maximum.
+ *
+ * @param root The root of the subtree to search.
+ * @return int The maximum key value in the subtree.
+ */
+int max(Node *root);
+
 #endif // REDBLACKTREE_H

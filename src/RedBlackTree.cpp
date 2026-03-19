@@ -248,6 +248,25 @@ Node *deleteMax(Node *root) {
   return root;
 }
 
+/* Min. */
+
+int min(Node *root) {
+  while (!root->left->isExternal)
+    root = root->left; // Iteratively search for the minimum in the left subtree.
+
+  return root->key;
+}
+
+/* Max. */
+
+int max(Node *root) {
+  while (!root->right->isExternal)
+    root = root->right; // Iteratively search for the maximum in the right subtree.
+
+  return root->key;
+}
+
+
 /* Auxiliary functions definitions */
 
 /**
@@ -471,33 +490,6 @@ Node *deleteNode(Node *h, int key) {
   return join(left, newNode(separator), right);
 }
 
-/**
- * @brief Return the minimum key value in the subtree rooted at the given node.
- * If the subtree is empty, return a large value to indicate no minimum.
- *
- * @param root The root of the subtree to search.
- * @return int The minimum key value in the subtree.
- */
-int min(Node *root) {
-  while (!root->left->isExternal)
-    root = root->left; // Iteratively search for the minimum in the left subtree.
-
-  return root->key;
-}
-
-/**
- * @brief Return the maximum key value in the subtree rooted at the given node.
- * If the subtree is empty, return a small value to indicate no maximum.
- *
- * @param root The root of the subtree to search.
- * @return int The maximum key value in the subtree.
- */
-int max(Node *root) {
-  while (!root->right->isExternal)
-    root = root->right; // Iteratively search for the maximum in the right subtree.
-
-  return root->key;
-}
 
 void print(Node *root, int indent = 0) {
   if (root == Node::nil)

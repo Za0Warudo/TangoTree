@@ -1,25 +1,72 @@
 CXX := g++
-CXXFLAGS := -std=c++17 -Wall -Wextra -O2
+CXXFLAGS := -std=c++17 -Wall -Wextra -g -Iincludes
 
+# Directories
 SRC_DIR := src
+MAIN_DIR := main
+BUILD_DIR := build
 BIN_DIR := bin
-TARGET := $(BIN_DIR)/RedBlackTree
 
-SRCS := $(wildcard $(SRC_DIR)/*.cpp)
-OBJS := $(SRCS:$(SRC_DIR)/%.cpp=$(BIN_DIR)/%.o)
+# ===== SOURCE DEFINITIONS =====
 
-all: $(TARGET)
+# Core libraries
+RBT_SRC := $(SRC_DIR)/RedBlackTree.cpp
+TANGO_SRC := $(SRC_DIR)/TangoTree.cpp
 
-$(BIN_DIR):
-	mkdir -p $(BIN_DIR)
+# Main files
+RBT_MAIN := $(MAIN_DIR)/MainRBT.cpp
+TT_MAIN := $(MAIN_DIR)/MainTT.cpp
 
-$(TARGET): $(BIN_DIR) $(OBJS)
-	$(CXX) $(CXXFLAGS) $(OBJS) -o $(TARGET)
+# ===== OBJECT FILES =====
 
-$(BIN_DIR)/%.o: $(SRC_DIR)/%.cpp | $(BIN_DIR)
+RBT_OBJ_LIB := $(BUILD_DIR)/RedBlackTree.o
+TANGO_OBJ := $(BUILD_DIR)/TangoTree.o
+
+RBT_MAIN_OBJ := $(BUILD_DIR)/MainRBT.o
+TT_MAIN_OBJ := $(BUILD_DIR)/MainTT.o
+
+# ===== TARGETS =====
+
+RBT_TARGET := $(BIN_DIR)/RedBlackTree
+TT_TARGET := $(BIN_DIR)/TangoTree
+
+# ===== DEFAULT =====
+
+all: $(RBT_TARGET) $(TT_TARGET)
+
+# ===== BUILD RULES =====
+
+# --- RedBlackTree executable ---
+$(RBT_TARGET): $(RBT_OBJ_LIB) $(RBT_MAIN_OBJ)
+	@mkdir -p $(BIN_DIR)
+	$(CXX) $(CXXFLAGS) $^ -o $@
+
+# --- TangoTree executable ---
+$(TT_TARGET): $(RBT_OBJ_LIB) $(TANGO_OBJ) $(TT_MAIN_OBJ)
+	@mkdir -p $(BIN_DIR)
+	$(CXX) $(CXXFLAGS) $^ -o $@
+
+# ===== COMPILATION RULES =====
+
+# Compile src/
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp
+	@mkdir -p $(BUILD_DIR)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-clean:
-	rm -rf $(BIN_DIR)
+# Compile main/
+$(BUILD_DIR)/%.o: $(MAIN_DIR)/%.cpp
+	@mkdir -p $(BUILD_DIR)
+	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-.PHONY: all clean
+# ===== CLEAN =====
+
+clean:
+	rm -rf $(BUILD_DIR) $(BIN_DIR)
+
+# ===== PHONY TARGETS =====
+
+.PHONY: all clean RedBlackTree TangoTree
+
+# Convenience commands
+RedBlackTree: $(RBT_TARGET)
+TangoTree: $(TT_TARGET)

@@ -24,6 +24,7 @@
 // defines
 #define SHORT_MAX 32767  // maximum value for a short number.
 #define SHORT_MIN -32768 // minimum value for a short number.
+#define DEBUG true       // flag for debugging
 
 /**
  * @brief Enum to represent the color of a node in the Red-Black Tree. A node can be either RED or BLACK.
@@ -72,38 +73,6 @@ struct Node {
         isExternal(false) {}
 };
 
-/**
- * @brief Define the nil node as a global variable. The nil node is a special node that represents the absence of a
- * child in the red-black tree. It is used to simplify the implementation by avoiding the need to check for null
- * pointers. The nil node is always black and is considered an external node. It has a key value that is not used (for
- * positive integer keys, we can use -1 for instance). The left and right pointers of the nil node point to itself,
- * creating a cycle. The depth and blackHeight of the nil node are set to 0. The maxDepth and minDepth are set to
- * SHORT_MIN and SHORT_MAX respectively. This allows us to treat the nil node as a leaf in the tree, which simplifies
- * the operation logic.
- */
-Node *Node::nil = [] {
-  Node *n = new Node(-1); // Create a new node with key -1 (or any value, since it won't be used).
-
-  n->color = BLACK; // The nil node is always black.
-
-  n->left = n->right = n; // The left and right pointers of the nil node point to itself.
-
-  n->isExternal = true; // The nil node is considered an external node.
-
-  n->depth = 0; // The depth of the nil node is set to 0. This field is not used for the nil node, but we set it to 0
-                // for consistency.
-
-  n->minDepth = SHORT_MAX; // The minimum depth of the nil node is set to the maximum possible value, since it is an
-                           // external node and has no children.
-
-  n->maxDepth = SHORT_MIN; // The maximum depth of the nil node is set to the minimum possible value, since it is an
-                           // external node and has no children.
-
-  n->blackHeight = 0; // The height of the nil node is set to 0, it's the unique node with height 0.
-
-  return n; // Return the pointer to the initialized nil node.
-}(); // Initialize the nil node.
-
 // Red-Black Tree methods. //
 
 /**
@@ -132,19 +101,19 @@ Node *newNode(int key, int depth = 0);
  */
 std::pair<Node *, Node *> search(Node *root, int key, Node *p = Node::nil);
 
-/**
- * @brief Splits the Red-Black Tree into two trees and a node. The first tree contains all the nodes with keys less than
- * the given key, the second tree contains all the nodes with keys greater than the given key, and the node with the
- * given key is returned as well. As a precondition, the key must be present in the tree.
- *
- * @param h The root of the subtree to split.
- * @param key The key value to split the tree around.
- * @return A tuple containing the left tree, the node with the given key, and the right tree.
- * @note Precondition: The key must exist in the tree before calling this function.
- * @note Time Complexity: O(log(N)), where N is the number of nodes in the subtree.
 
+/**
+ * @brief inserts a key into the Red-Black Tree rooted at the given node. This function uses a recursive helper function
+ * to perform the actual insertion and then ensures that the root of the tree is always black after insertion to
+ * maintain the properties of the Red-Black Tree. As a precondition, the key to be inserted must not already be present
+ * in the tree. The function returns the new root of the treeafter insertion.
+ *
+ * @param root The root of the Red-Black Tree into which the key is to be inserted.
+ * @param key The key to insert into the tree. Should not be already present in the tree.
+ * @return The new root of the tree after inserting the key and maintaining the properties of the Red-Black Tree.
+ * @note Time Complexity: O(log(N)), where N is the number of nodes in the subtree.
  */
-std::tuple<Node *, Node *, Node *> split(Node *h, int key);
+Node *insert(Node *root, int key);
 
 /**
  * @brief Joins two Red-Black Trees and a node into a single tree. As a precondition, all keys in the left tree must be
@@ -159,6 +128,20 @@ std::tuple<Node *, Node *, Node *> split(Node *h, int key);
  * @note Time Complexity: O(|h1 - h2|), where h1 is the black-height of the left tree and h2 is the black-height of the right tree. 
  */
 Node *join(Node *leftTree, Node *x, Node *rightTree);
+
+/**
+ * @brief Splits the Red-Black Tree into two trees and a node. The first tree contains all the nodes with keys less than
+ * the given key, the second tree contains all the nodes with keys greater than the given key, and the node with the
+ * given key is returned as well. As a precondition, the key must be present in the tree.
+ *
+ * @param h The root of the subtree to split.
+ * @param key The key value to split the tree around.
+ * @return A tuple containing the left tree, the node with the given key, and the right tree.
+ * @note Precondition: The key must exist in the tree before calling this function.
+ * @note Time Complexity: O(log(N)), where N is the number of nodes in the subtree.
+
+ */
+std::tuple<Node *, Node *, Node *> split(Node *h, int key);
 
 /**
  * @brief Delete the node with the minimum key in the Red-Black Tree.
@@ -181,6 +164,22 @@ Node *deleteMin(Node *root);
 Node *deleteMax(Node *root);
 
 /**
+ * @brief Removes the node associated with the given key while maintaining tree invariants.
+ *
+ * This implementation demonstrates the efficiency of the Split/Join paradigm:
+ * It partitions the tree to isolate the target key and then merges the remaining
+ * subtrees to restore the Red-Black structure.
+ *
+ * @param h The current root of the subtree.
+ * @param key The key to be deleted.
+ * @return The new root of the tree after the join operation.
+ *
+ * @note Precondition: The key must exist in the tree before calling this function.
+ * @note Time Complexity: O(log N), where N is the number of nodes in the subtree.
+ */
+Node *deleteNode(Node *h, int key);
+
+/**
  * @brief Return the minimum key value in the subtree rooted at the given node.
  *
  * @param root The root of the subtree to search.
@@ -198,5 +197,13 @@ int min(Node *root);
  * @note Time Complexity: O(log(N)), where N is the number of nodes in the subtree.
  */
 int max(Node *root);
+
+/**
+ * @brief Prints the Red-Black Tree rooted at the given node.
+ *
+ * @param root The root of the tree to print.
+ * @param indent The indentation level for printing.
+ */
+void print(Node *root, int indent = 0);
 
 #endif // REDBLACKTREE_H

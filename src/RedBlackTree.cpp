@@ -5,21 +5,11 @@
  * @date 2026-03-14
  * @copyright Copyright (c) 2026
  *
- * Interface:
- *
- * 0 <id> <l> <r> - Builds a RBT with id <id> that contains the keys in (l, r).
- *
- * 1 <id> <k> - Inserts the key <k> in the tree with the id <id>.
- *
- * 2 <id> <k> - Checks if the key <k> is in the tree with the id <id>.
- *
- * 3 <id> <k> - Removes the key <k> from the tree wuth the id <id>.
- *
- * 4 <id1> <k> <id2> - Joins the tree with id <id1> and the tree with id <id2> using a new node with key <k> as
- * separator. The resulting tree is stored in the tree with id <id1>, while the tree with id <id2> is cleared.
- *
- * 5 <id> <k> - Splits the tree with id <id> using the key <k>. The resulting left subtree, node with key <k>, and right
- * subtree are printed to the output, and the original tree with id <id> is cleared.
+ * Implementation of the Red-Black Tree data structure defined in RedBlackTree.h. The implementation includes the basic
+ * operations of a Red-Black Tree, such as insertion, deletion of the minimum and maximum nodes, searching for a key,
+ * and the auxiliary operations of join and split. The implementation is designed to be clear and correct, with a focus
+ * on maintaining the properties of the Red-Black Tree and ensuring that the operations work correctly in the context of
+ * their use in a Tango Tree implementation.
  */
 
 // includes.
@@ -29,8 +19,41 @@
 #include <iostream>
 #include <map>
 
-// flag for debugging, set to true to enable assert tests, false to disable.
+// flag for debugging, set to true to enable assert tests, false to disable. The debug test may include some poor
+// performance tests, so it is recommended to disable it when not needed.
 #define DEBUG true
+
+/**
+ * @brief Define the nil node as a global variable. The nil node is a special node that represents the absence of a
+ * child in the red-black tree. It is used to simplify the implementation by avoiding the need to check for null
+ * pointers. The nil node is always black and is considered an external node. It has a key value that is not used (for
+ * positive integer keys, we can use -1 for instance). The left and right pointers of the nil node point to itself,
+ * creating a cycle. The depth and blackHeight of the nil node are set to 0. The maxDepth and minDepth are set to
+ * SHORT_MIN and SHORT_MAX respectively. This allows us to treat the nil node as a leaf in the tree, which simplifies
+ * the operation logic.
+ */
+Node *Node::nil = [] {
+  Node *n = new Node(-1); // Create a new node with key -1 (or any value, since it won't be used).
+
+  n->color = BLACK; // The nil node is always black.
+
+  n->left = n->right = n; // The left and right pointers of the nil node point to itself.
+
+  n->isExternal = true; // The nil node is considered an external node.
+
+  n->depth = 0; // The depth of the nil node is set to 0. This field is not used for the nil node, but we set it to 0
+                // for consistency.
+
+  n->minDepth = SHORT_MAX; // The minimum depth of the nil node is set to the maximum possible value, since it is an
+                           // external node and has no children.
+
+  n->maxDepth = SHORT_MIN; // The maximum depth of the nil node is set to the minimum possible value, since it is an
+                           // external node and has no children.
+
+  n->blackHeight = 0; // The height of the nil node is set to 0, it's the unique node with height 0.
+
+  return n; // Return the pointer to the initialized nil node.
+}(); // Initialize the nil node.
 
 /* Headers of auxiliary functions. */
 
@@ -43,10 +66,6 @@ Node *rotateRight(Node *h);
 Node *moveRedLeft(Node *h);
 
 Node *moveRedRight(Node *h);
-
-int max(Node *root);
-
-int min(Node *root);
 
 std::pair<Node *, Node *> detach(Node *h);
 
@@ -63,15 +82,49 @@ Node *newNode(int key, int depth) {
 
 /* Search */
 
-Node *search(Node *h, int key) {
+std::pair<Node *, Node *> search(Node *h, int key, Node *p) {
   if (h->isExternal || h->key == key)
-    return h; // If the node is external or the key matches, return the node.
+    return {h, p}; // If the node is external or the key matches, return the node and its parent.
   if (key < h->key)
-    return search(h->left, key); // If the key is less than the current node's
-                                 // key, search in the left subtree.
+    return search(h->left, key, h); // If the key is less than the current node's key, search in the left subtree.
   else
-    return search(h->right, key); // If the key is greater than the current
-                                  // node's key, search in the right subtree.
+    return search(h->right, key, h); // If the key is greater than the current node's key, search in the right subtree.
+}
+
+/* Insert. */
+
+/**
+ * @brief Recursive method to insert a key into the subtree rooted at h. If we reach an external node, we create and
+ * return a new node with the given key. If the key is less than the current node's key, we insert into the left
+ * subtree; if it is greater, we insert into the right subtree. After inserting, we balance the subtree rooted at h to
+ * maintain the properties of the Red-Black Tree.
+ *
+ * @param h The root of the subtree into which to insert the key.
+ * @param key The key to insert into the subtree.
+ * @return The new root of the subtree after inserting the key and balancing the tree.
+ */
+Node *insertRec(Node *h, int key) {
+  if (h->isExternal)
+    return newNode(key); // If we reach the nil node, we create and return a new
+                         // node with the given key.
+  if (key < h->key)
+    h->left = insertRec(h->left, key); // If the key is less than the current node's
+                                       // key, insert into the left subtree.
+  else if (key > h->key)
+    h->right = insertRec(h->right, key); // If the key is greater than the current
+                                         // node's key, insert into the right subtree.
+  else
+    return h;        // If the key is equal to the current node's key, we do not insert
+                     // duplicates and simply return the current node.
+  return balance(h); // After insertion, we balance the subtree rooted at h to
+                     // maintain the properties of the Red-Black Tree.
+}
+
+Node *insert(Node *root, int key) {
+  root = insertRec(root,
+                   key); // Insert the key into the tree using the recursive insert function
+  root->color = BLACK;   // Ensure the root of the tree is always black after insertion.
+  return root;
 }
 
 /* Join. */
@@ -111,18 +164,15 @@ Node *joinRec(Node *leftTree, Node *x, Node *rightTree) {
 Node *join(Node *leftTree, Node *x, Node *rightTree) {
   if (DEBUG)
     assert(max(leftTree) < x->key &&
-           x->key < min(rightTree)); // Ensure that all keys in the left tree are less
-                                     // than x's key and all keys in the right tree are
-                                     // greater than x's key before joining. This test has a cost greater than the join
-                                     // operation itself, but it is useful for debugging and ensuring the correctness of
-                                     // the join operation.
+           x->key < min(rightTree)); // Ensure that all keys in the left tree are less than x's key and all keys in the
+                                     // right tree are greater than x's key before joining. This test has a cost greater
+                                     // than the join operation itself, but it is useful for debugging and ensuring the
+                                     // correctness of the join operation.
 
-  detach(x); // Detach x from its current position in the tree to prepare for
-             // joining.
+  detach(x); // Detach x from its current position in the tree to prepare for joining.
 
   Node *y = joinRec(leftTree, x,
-                    rightTree); // Join the left tree, the node x, and the right
-                                // tree using the recursive join function.
+                    rightTree); // Join the left tree, the node x, and the right tree using the recursive join function.
 
   y->color = BLACK; // Ensure the new root of the joined tree is black.
 
@@ -157,16 +207,14 @@ std::tuple<Node *, Node *, Node *> splitRec(Node *h, int key) {
   }
 
   auto [left, right] = detach(h);
-  left->color = right->color = BLACK; // Ensure the detached left and right
-                                      // subtrees are black before returning.
+  left->color = right->color = BLACK; // Ensure the detached left and right subtrees are black before returning.
 
-  return {left, h, right}; // Return the left subtree, the node with the given
-                           // key, and the right subtree as a tuple.
+  return {left, h, right}; // Return the left subtree, the node with the given key, and the right subtree as a tuple.
 }
 
 std::tuple<Node *, Node *, Node *> split(Node *h, int key) {
   if (DEBUG)
-    assert(search(h, key) != Node::nil); // Ensure that the key is present in the tree before splitting.
+    assert(search(h, key).first != Node::nil); // Ensure that the key is present in the tree before splitting.
 
   return splitRec(h, key); // Split the tree using the recursive split function.
 }
@@ -185,11 +233,11 @@ std::tuple<Node *, Node *, Node *> split(Node *h, int key) {
  */
 Node *deleteMinRec(Node *h) {
   if (h->left->isExternal)
-    return Node::nil; // If the left child of h is nil, then h is the minimum
-                      // node, so we return nil to delete it.
+    return h->left->right; // If the left child of h is nil, then h is the minimum node, so we return it's right pointer
+                           // (nil for nil, and useful for tango tree).
   if (h->left->color == BLACK &&
-      h->left->left->color == BLACK) // Garantee that the left child of h is not a 2-node by moving
-    // a red link left if necessary.
+      h->left->left->color ==
+          BLACK) // Guarantee that the left child of h is not a 2-node by moving a red link left if necessary.
     h = moveRedLeft(h);
   h->left = deleteMinRec(h->left);
   return balance(h);
@@ -197,9 +245,8 @@ Node *deleteMinRec(Node *h) {
 
 Node *deleteMin(Node *root) {
   if (DEBUG)
-    assert(root != Node::nil); // Ensure that the root is not the nil node before
-                               // deleting the minimum, since we should never
-                               // delete from an empty tree.
+    assert(root != Node::nil); // Ensure that the root is not the nil node before deleting the minimum, since we should
+                               // never delete from an empty tree.
   if (root->left->color == BLACK)
     root->color = RED; // ensure that the root is red before deleting the minimum, which allows us to maintain the
                        // properties of the Red-Black Tree during deletion.
@@ -222,13 +269,12 @@ Node *deleteMin(Node *root) {
  */
 Node *deleteMaxRec(Node *h) {
   if (h->left->color == RED)
-    h = rotateRight(h); // If the left child of h is red, rotate right to ensure that we are
-                        // moving down a path with a red link, which allows us to maintain
-                        // the properties of the Red-Black Tree during deletion.
+    h = rotateRight(h); // If the left child of h is red, rotate right to ensure that we are moving down a path with a
+                        // red link, which allows us to maintain the properties of the Red-Black Tree during deletion.
   if (h->right->isExternal)
-    return Node::nil; // If the right child of h is nil, then h is the maximum
-                      // node, so we return nil to delete it.
-  if (h->right->color == BLACK && h->right->left->color == BLACK) // Garantee that the right child of h is not a 2-node
+    return h->right->left; // If the right child of h is nil, then h is the maximum
+                           // node, so we return it's left pointer (nil for nil, and useful for tango tree).
+  if (h->right->color == BLACK && h->right->left->color == BLACK) // Guarantee that the right child of h is not a 2-node
                                                                   // by moving a red link right if necessary.
     h = moveRedRight(h);
   h->right = deleteMaxRec(h->right);
@@ -237,15 +283,35 @@ Node *deleteMaxRec(Node *h) {
 
 Node *deleteMax(Node *root) {
   if (DEBUG)
-    assert(root != Node::nil); // Ensure that the root is not the nil node before
-                               // deleting the maximum, since we should never
-                               // delete from an empty tree.
+    assert(root != Node::nil); // Ensure that the root is not the nil node before deleting the maximum, since we should
+                               // never delete from an empty tree.
   if (root->left->color == BLACK)
     root->color = BLACK;
   root = deleteMaxRec(root);
 
   root->color = BLACK;
   return root;
+}
+
+/* DeleteNode. */
+
+Node *deleteNode(Node *h, int key) {
+  if (DEBUG)
+    assert(search(h, key).first != Node::nil); // Ensure that the key is present in the
+                                               // tree before attempting to delete it.
+
+  auto [left, x, right] = split(h, key);
+  // Join the left and right subtrees, excluding the node with the key.
+  if (left->isExternal)
+    return right;
+  if (right->isExternal)
+    return left;
+
+  // Find a node to use as separator (use min from right), since the above test guarantee that both left and right trees
+  // are not empty.
+  int separator = min(right);
+  right = deleteMin(right);
+  return join(left, newNode(separator), right);
 }
 
 /* Min. */
@@ -266,22 +332,33 @@ int max(Node *root) {
   return root->key;
 }
 
+/* Print. */
+
+void print(Node *root, int indent) {
+  if (root == Node::nil)
+    return;
+  print(root->right, indent + 4);
+  if (indent)
+    std::cout << std::string(indent, ' ');
+  std::cout << '(' << root->key << ' ' << (root->color == RED ? "R" : "B") << ')' << "\n";
+  print(root->left, indent + 4);
+}
 
 /* Auxiliary functions definitions */
 
 /**
- * @brief Updates the infos of the given node based on its children. This
- * function should be called after any modification to the subtree rooted at the
- * given node to ensure that the properties of the Red-Black Tree and the
+ * @brief Updates the infos of the given node based on its children. This function should be called after any
+ * modification to the subtree rooted at the given node to ensure that the properties of the Red-Black Tree and the
  * auxiliary tree are maintained.
  *
  * @param h The node whose infos are to be updated.
+ * @note Time Complexity: O(1)
  */
 void update(Node *h) {
   if (DEBUG)
     assert(!h->isExternal); // Ensure that h is not an external node before updating, since we should never update a nil
                             // node or another tree root.
-  
+
   // Update Red-Black Tree properties.
   h->blackHeight = std::max(h->left->blackHeight + h->left->color == BLACK ? 1 : 0, h->right->blackHeight + 1);
 
@@ -291,18 +368,18 @@ void update(Node *h) {
 }
 
 /**
- * @brief Rotate a subtree to the left. This operation is used to maintain the
- * balance of the Red-Black Tree. As a precondition, the right child of h must
- * be red.
+ * @brief Rotate a subtree to the left. This operation is used to maintain the balance of the Red-Black Tree. As a
+ * precondition, the right child of h must be red.
  *
  * @param h The root of the subtree to rotate.
  * @return The new root of the subtree after rotation.
+ * @note Time Complexity: O(1)
  */
 Node *rotateLeft(Node *h) {
   if (DEBUG)
-    assert(h->right->color == RED); // Ensure that the right child of h is red before rotating left,
-                                    // if h is the nil node, this assertion will fail, which is
-                                    // expected since we should never rotate left on a nil node.
+    assert(h->right->color ==
+           RED); // Ensure that the right child of h is red before rotating left, if h is the nil node, this assertion
+                 // will fail, which is expected since we should never rotate left on a nil node.
 
   Node *x = h->right;  // Set x to the right child of h.
   h->right = x->left;  // Move x's left subtree to be h's right subtree.
@@ -321,6 +398,7 @@ Node *rotateLeft(Node *h) {
  *
  * @param h The root of the subtree to rotate.
  * @return The new root of the subtree after rotation.
+ * @note Time Complexity: O(1)
  */
 Node *rotateRight(Node *h) {
   if (DEBUG)
@@ -346,13 +424,13 @@ Node *rotateRight(Node *h) {
  *
  * @param h The node whose colors are to be flipped.
  * @return The node after flipping colors.
+ * @note Time Complexity: O(1)
  */
 Node *flipColors(Node *h) {
-  assert(h->color != h->left->color && h->color != h->right->color); // Ensure that h's color is different
-                                                                     // from its children's colors before flipping, if
-                                                                     // h is the nil node, this assertion will fail,
-                                                                     // which is expected since we should never flip
-                                                                     // colors on a nil node.
+  assert(h->color != h->left->color &&
+         h->color != h->right->color); // Ensure that h's color is different from its children's colors before flipping,
+                                       // if h is the nil node, this assertion will fail, which is expected since we
+                                       // should never flip colors on a nil node.
 
   Color c = h->color;                   // Save h's color.
   h->color = h->left->color;            // Flip h's color.
@@ -361,11 +439,12 @@ Node *flipColors(Node *h) {
 }
 
 /**
- * @brief Balance the subtree rooted at node h. This function is called to fix
- * local violations of the Red-Black Tree properties.
+ * @brief Balance the subtree rooted at node h. This function is called to fix local violations of the Red-Black Tree
+ * properties.
  *
  * @param h The root of the subtree to balance.
  * @return The new root of the subtree after balancing.
+ * @note Time Complexity: O(1)
  */
 Node *balance(Node *h) {
   if (h->right->color == RED)
@@ -378,12 +457,12 @@ Node *balance(Node *h) {
 }
 
 /**
- * @brief Move a red link left. This operation is used during deletion to ensure
- * that the properties of the Red-Black Tree are maintained. As a precondition,
- * h must not be the nil node.
+ * @brief Move a red link left. This operation is used during deletion to ensure that the properties of the Red-Black
+ * Tree are maintained. As a precondition, h must not be the nil node.
  *
  * @param h The node from which to move the red link left.
  * @return The node after moving the red link left.
+ * @note Time Complexity: O(1)
  */
 Node *moveRedLeft(Node *h) {
   if (DEBUG)
@@ -401,28 +480,37 @@ Node *moveRedLeft(Node *h) {
 }
 
 /**
- * @brief Move a red link right. This operation is used during deletion to
- * ensure that the properties of the Red-Black Tree are maintained. As a
- * precondition, h must not be the nil node.
+ * @brief Move a red link right. This operation is used during deletion to ensure that the properties of the Red-Black
+ * Tree are maintained. As a precondition, h must not be the nil node.
  *
  * @param h The node from which to move the red link right.
  * @return The node after moving the red link right.
+ * @note Time Complexity: O(1)
  */
 Node *moveRedRight(Node *h) {
   if (DEBUG)
     assert(h != Node::nil); // Ensure that h is not the nil node before moving red right,
                             // since we should never move red right on a nil node.
 
-  h = flipColors(h);                  // Flip colors to prepare for moving red right.
-  if (h->left->right->color == RED) { // If the right child of the left child is
-                                      // red, perform rotations and color flips.
-    h->left = rotateLeft(h->left);    // Rotate left on the left child.
-    h = rotateRight(h);               // Rotate right on h.
-    h = flipColors(h);                // Flip colors to maintain Red-Black properties.
+  h = flipColors(h);                 // Flip colors to prepare for moving red right.
+  if (h->left->left->color == RED) { // If the left child of the left child is
+                                     // red, perform rotations and color flips.
+    h = rotateRight(h);              // Rotate right on h.
+    h = flipColors(h);               // Flip colors to maintain Red-Black properties.
   }
   return h;
 }
 
+/**
+ * @brief Detach the left and right subtrees from a given node. This function is used during the join operation to
+ * prepare a node for joining by detaching its left and right subtrees and setting them to nil. As a precondition, h
+ * must not be the nil node.
+ *
+ * @param h The node from which to detach the left and right subtrees. Should not be nil.
+ * @return the detached left and right subtrees as a pair, where the first element is the left subtree and the second
+ * element is the right subtree.
+ * @note Time Complexity: O(1)
+ */
 std::pair<Node *, Node *> detach(Node *h) {
   Node *leftSubtree = h->left;        // Store the left subtree of h.
   Node *rightSubtree = h->right;      // Store the right subtree of h.
@@ -436,84 +524,18 @@ std::pair<Node *, Node *> detach(Node *h) {
  * Functions for testing and debugging
  **************************************************************/
 
-Node *insertRec(Node *h, int key) {
-  if (h == Node::nil)
-    return newNode(key); // If we reach a nil node, we create and return a new
-                         // node with the given key.
-  if (key < h->key)
-    h->left = insertRec(h->left, key); // If the key is less than the current node's
-                                       // key, insert into the left subtree.
-  else if (key > h->key)
-    h->right = insertRec(h->right, key); // If the key is greater than the current
-                                         // node's key, insert into the right subtree.
-  else
-    return h;        // If the key is equal to the current node's key, we do not insert
-                     // duplicates and simply return the current node.
-  return balance(h); // After insertion, we balance the subtree rooted at h to
-                     // maintain the properties of the Red-Black Tree.
-}
-
-Node *insert(Node *root, int key) {
-  root = insertRec(root,
-                   key); // Insert the key into the tree using the recursive insert function
-  root->color = BLACK;   // Ensure the root of the tree is always black after insertion.
-  return root;
-}
 
 /**
- * @brief Delete a node with a given key from the Red-Black Tree, while
- * maintaining the properties of the tree. As a precondition, the key must be
- * present in the tree. This functions uses the split and join operations to
- * remove the node with the given key and then join the resulting left and right
- * subtrees back together, showing the power of these operations in maintaining
- * the structure of the Red-Black Tree during deletion.
+ * @brief Validates if the Red-Black Tree (RBT) satisfies the Binary Search Tree (BST) property.
+ * Ensures that for every node:
+ * - All keys in the left subtree are strictly less than the node's key.
+ * - All keys in the right subtree are strictly greater than the node's key.
  *
- * @param h The root of the tree
- * @param key The key to delete
- * @return The new root of the tree after deletion
- */
-Node *deleteNode(Node *h, int key) {
-  if (DEBUG)
-    assert(search(h, key) != Node::nil); // Ensure that the key is present in the
-                                         // tree before attempting to delete it.
-
-  auto [left, x, right] = split(h, key);
-  // Join the left and right subtrees, excluding the node with the key.
-  if (left == Node::nil)
-    return right;
-  if (right == Node::nil)
-    return left;
-
-  // Find a node to use as separator (use min from right).
-  int separator = min(right);
-  right = deleteMin(right);
-  return join(left, newNode(separator), right);
-}
-
-
-void print(Node *root, int indent = 0) {
-  if (root == Node::nil)
-    return;
-  print(root->right, indent + 4);
-  if (indent)
-    std::cout << std::string(indent, ' ');
-  std::cout << '(' << root->key << ' ' << (root->color == RED ? "R" : "B") << ')' << "\n";
-  print(root->left, indent + 4);
-}
-
-/**
- * @brief Check if the Red-Black Tree rooted at the given node is a valid binary
- * search tree. A binary search tree is valid if for every node, all keys in the
- * left subtree are less than the node's key, and all keys in the right subtree
- * are greater than the node's key.
- *
- * @param root The root of the subtree to check for the binary search tree
- * property.
- * @param min The minimum key value allowed for the current subtree (used for
- * recursive checks).
- * @param max The maximum key value allowed for the current subtree (used for
- * recursive checks).
- * @return true if the subtree is a valid binary search tree, false otherwise.
+ * @param root The root of the subtree to validate.
+ * @param min The lower bound for the current node's key.
+ * @param max The upper bound for the current node's key.
+ * @return true if the subtree is a valid BST; false otherwise.
+ * @note Time Complexity: O(N), where N is the number of nodes in the subtree.
  */
 bool isBST(Node *root, int min = INT_MIN, int max = INT_MAX) {
   if (root->isExternal)
@@ -524,12 +546,13 @@ bool isBST(Node *root, int min = INT_MIN, int max = INT_MAX) {
 }
 
 /**
- * @brief Check if the Red-Black Tree rooted at the given node is balanced. A
- * Red-Black Tree is balanced if every path from the root to a leaf has the same
- * number of black nodes.
+ * @brief Verifies the Black-Height property of the Red-Black Tree.
+ * A subtree is considered balanced if every path from the current root
+ * to a descendant leaf contains the same number of black nodes.
  *
- * @param root The root of the subtree to check for balance.
- * @return true if the subtree is balanced, false otherwise.
+ * @param root The root of the subtree to validate.
+ * @return true if the black-height is consistent across all paths; false otherwise.
+ * @note Time Complexity: O(N), where N is the number of nodes in the subtree.
  */
 bool isBalanced(Node *root) {
   if (root->isExternal)
@@ -542,12 +565,14 @@ bool isBalanced(Node *root) {
 }
 
 /**
- * @brief Check if the Red-Black Tree rooted at the given node is a valid 2-3
- * tree. A Red-Black Tree is a valid 2-3 tree if it does not contain any
- * right-leaning red links and does not contain two red links in a row.
+ * @brief Validates the 2-3 tree structural invariants for the current subtree.
+ * A valid Left-Leaning Red-Black Tree (LLRBT) must satisfy:
+ * - No right-leaning red links (all red links must be left children).
+ * - No two consecutive red links in any path (no "4-node" violations).
  *
- * @param root The root of the subtree to check for the 2-3 tree property.
- * @return true if the subtree is a valid 2-3 tree, false otherwise.
+ * @param root The root of the subtree to validate.
+ * @return true if the subtree satisfies all LLRBT properties; false otherwise.
+ * @note Time Complexity: O(N), where N is the total number of nodes in the subtree.
  */
 bool is23(Node *root) {
   if (root->isExternal)
@@ -558,12 +583,15 @@ bool is23(Node *root) {
 }
 
 /**
- * @brief Check if the Red-Black Tree rooted at the given node satisfies all the
- * properties of a valid Red-Black Tree, including being a binary search tree,
- * being balanced, and being a valid 2-3 tree.
+ * @brief Performs a comprehensive validation of the Red-Black Tree (RBT) invariants.
+ * This is a composite check that verifies the following structural and logical properties:
+ * - Binary Search Tree (BST) property: Keys are correctly ordered.
+ * - Balance property: Uniform black-height across all paths.
+ * - 2-3 Tree (LLRBT) property: No right-leaning red links or consecutive red links.
  *
- * @param root The root of the subtree to check for validity.
- * @return true if the subtree is a valid Red-Black Tree, false otherwise.
+ * @param root The root of the subtree to validate.
+ * @return true if all RBT invariants are satisfied; false otherwise.
+ * @note Time Complexity: O(N), where N is the total number of nodes in the tree.
  */
 bool check(Node *root) {
   if (!isBST(root))
@@ -573,111 +601,4 @@ bool check(Node *root) {
   if (!is23(root))
     return false;
   return true;
-}
-
-/* Main test. */
-
-int main() {
-  std::map<int, Node *> trees; // Map to store trees by ID.
-
-  int operation, id, val, id2, key;
-
-  while (std::cin >> operation) {
-    switch (operation) {
-    case 0: {
-      int l, r;
-      std::cin >> id >> l >> r;
-      if (trees.count(id) == 0)
-        trees[id] = Node::nil;
-
-      for (int i = l; i <= r; i++)
-        trees[id] = insert(trees[id], i);
-
-      break;
-    }
-    case 1: { // Insert.
-      std::cin >> id >> val;
-      if (trees.count(id) == 0)
-        trees[id] = Node::nil;
-
-      trees[id] = insert(trees[id], val);
-      check(trees[id]); // Check the validity of the tree after insertion.
-
-      if (DEBUG)
-        std::cout << "Inserted " << val << " into tree " << id << std::endl;
-
-      break;
-    }
-    case 2: { // Contains.
-      std::cin >> id >> val;
-      Node *tree = (trees.count(id) > 0) ? trees[id] : Node::nil;
-      bool found = (search(tree, val) != Node::nil);
-      std::cout << (found ? "True" : "False") << std::endl;
-      break;
-    }
-    case 3: { // Delete.
-      std::cin >> id >> val;
-      if (trees.count(id) > 0) {
-        trees[id] = deleteNode(trees[id], val);
-        check(trees[id]); // Check the validity of the tree after deletion.
-        if (DEBUG)
-          std::cout << "Deleted " << val << " from tree " << id << std::endl;
-      } else {
-        std::cout << "Invalid ID" << std::endl;
-      }
-      break;
-    }
-    case 4: { // Join.
-      int id1;
-      std::cin >> id1 >> key >> id2;
-      Node *t1 = (trees.count(id1) > 0) ? trees[id1] : Node::nil;
-      Node *t2 = (trees.count(id2) > 0) ? trees[id2] : Node::nil;
-      Node *separator = newNode(key);
-      Node *result = join(t1, separator, t2);
-      check(result);          // Check the validity of the joined tree.
-      trees[id1] = result;    // Store result in first tree's ID.
-      trees[id2] = Node::nil; // Clear second tree's ID.
-      if (DEBUG) {
-        std::cout << "Joined tree " << id1 << " and tree " << id2 << " with separator " << key << std::endl;
-        print(result); // Print the resulting tree after join.
-      }
-      break;
-    }
-    case 5: { // Split.
-      std::cin >> id >> key;
-      if (trees.count(id) > 0) {
-        auto [left, x, right] = split(trees[id], key);
-        std::cout << "-------- L --------" << std::endl;
-        print(left);
-        std::cout << "-------- x --------" << std::endl;
-        print(x);
-        std::cout << "-------- R --------" << std::endl;
-        print(right);
-        std::cout << "-------------------" << std::endl;
-        // Optionally store the split results.
-        trees[id] = Node::nil; // Clear original tree's ID.
-        check(left);           // Check the validity of the left subtree.
-        assert(x->key == key); // Check the validity of the node with the given key.
-        check(right);          // Check the validity of the right subtree.
-      } else {
-        std::cout << "Invalid ID" << std::endl;
-      }
-      break;
-    }
-    case 6: { // Print.
-      std::cin >> id;
-      if (trees.count(id) > 0) {
-        print(trees[id]);
-      } else {
-        std::cout << "Invalid ID" << std::endl;
-      }
-      break;
-    }
-    default:
-      std::cout << "Invalid Operation" << std::endl;
-      break;
-    }
-  }
-
-  return 0;
 }

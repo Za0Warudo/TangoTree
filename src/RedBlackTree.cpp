@@ -524,7 +524,6 @@ std::pair<Node *, Node *> detach(Node *h) {
  * Functions for testing and debugging
  **************************************************************/
 
-
 /**
  * @brief Validates if the Red-Black Tree (RBT) satisfies the Binary Search Tree (BST) property.
  * Ensures that for every node:

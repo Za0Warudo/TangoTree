@@ -26,10 +26,10 @@
  */
 
 // includes.
+#include "RedBlackTree.h"
+#include <cassert>
 #include <iostream>
 #include <map>
-#include <cassert>
-#include "RedBlackTree.h"
 
 int main() {
   std::map<int, Node *> trees; // Map to store trees by ID.

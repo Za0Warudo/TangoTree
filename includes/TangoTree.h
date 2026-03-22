@@ -18,8 +18,8 @@
 
 /**
  * @brief A class representing a Tango Tree data structure. A Tango Tree is a self-adjusting binary search tree that
- * operates based in a reference tree and performs operations based on the structure of the reference tree. The Tango Tree
- * supports efficient search operations and can be used in various applications where dynamic data structures are
+ * operates based in a reference tree and performs operations based on the structure of the reference tree. The Tango
+ * Tree supports efficient search operations and can be used in various applications where dynamic data structures are
  * required.
  */
 class TangoTree {

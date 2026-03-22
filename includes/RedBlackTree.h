@@ -101,7 +101,6 @@ Node *newNode(int key, int depth = 0);
  */
 std::pair<Node *, Node *> search(Node *root, int key, Node *p = Node::nil);
 
-
 /**
  * @brief inserts a key into the Red-Black Tree rooted at the given node. This function uses a recursive helper function
  * to perform the actual insertion and then ensures that the root of the tree is always black after insertion to
@@ -125,7 +124,8 @@ Node *insert(Node *root, int key);
  * @return The root of the new tree formed by joining the left tree, the node, and the right tree.
  * @note Precondition: All the keys in the left tree must be smaller than the key in the given node. All the keys in the
  * right tree must be greater than the key in the given node.
- * @note Time Complexity: O(|h1 - h2|), where h1 is the black-height of the left tree and h2 is the black-height of the right tree. 
+ * @note Time Complexity: O(|h1 - h2|), where h1 is the black-height of the left tree and h2 is the black-height of the
+ * right tree.
  */
 Node *join(Node *leftTree, Node *x, Node *rightTree);
 
@@ -148,7 +148,7 @@ std::tuple<Node *, Node *, Node *> split(Node *h, int key);
  *
  * @param root The root of the subtree from which to delete the minimum node.
  * @return The root of the subtree after deleting the minimum node.
- * @note Precondition: The tree must not be empty. 
+ * @note Precondition: The tree must not be empty.
  * @note Time Complexity: O(log(N)), where N is the number of nodes in the subtree.
  */
 Node *deleteMin(Node *root);
@@ -158,7 +158,7 @@ Node *deleteMin(Node *root);
  *
  * @param root The root of the subtree from which to delete the maximum node.
  * @return The root of the subtree after deleting the maximum node.
- * @note Precondition: The tree must not be empty. 
+ * @note Precondition: The tree must not be empty.
  * @note Time Complexity: O(log(N)), where N is the number of nodes in the subtree.
  */
 Node *deleteMax(Node *root);
@@ -184,7 +184,7 @@ Node *deleteNode(Node *h, int key);
  *
  * @param root The root of the subtree to search.
  * @return int The minimum key value in the subtree.
- * @note Precondition: The tree must not be empty. 
+ * @note Precondition: The tree must not be empty.
  * @note Time Complexity: O(log(N)), where N is the number of nodes in the subtree.
  */
 int min(Node *root);
@@ -193,7 +193,7 @@ int min(Node *root);
  *
  * @param root The root of the subtree to search.
  * @return int The maximum key value in the subtree.
- * @note Precondition: The tree must not be empty. 
+ * @note Precondition: The tree must not be empty.
  * @note Time Complexity: O(log(N)), where N is the number of nodes in the subtree.
  */
 int max(Node *root);

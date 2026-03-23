@@ -144,15 +144,15 @@ Node *insert(Node *root, int key) {
  */
 Node *joinRec(Node *leftTree, Node *x, Node *rightTree) {
   if (leftTree->blackHeight > rightTree->blackHeight) {
-    leftTree->right = joinRec(leftTree->right, x,
-                              rightTree); // If the left tree has a greater black height, join the
-                                          // right subtree of the left tree with x and the right tree.
+    leftTree->left = joinRec(leftTree->left, x,
+                             rightTree); // If the left tree has a greater black height, join the
+                                         // left subtree of the left tree with x and the right tree.
     return balance(leftTree);
   }
   if (leftTree->blackHeight < rightTree->blackHeight) {
-    rightTree->left = joinRec(leftTree, x,
-                              rightTree->left); // If the right tree has a greater black height, join the
-                                                // left tree with x and the left subtree of the right tree.
+    rightTree->right = joinRec(leftTree, x,
+                               rightTree->right); // If the right tree has a greater black height, join the
+                                                  // right tree with x and the right subtree of the right tree.
     return balance(rightTree);
   }
   x->left = leftTree;
@@ -195,12 +195,12 @@ Node *join(Node *leftTree, Node *x, Node *rightTree) {
  * right tree (with keys greater than the given key) after applying the split operation.
  */
 std::tuple<Node *, Node *, Node *> splitRec(Node *h, int key) {
-  if (h->key > key) {
+  if (key < h->key) {
     auto [left, x, right] = splitRec(h->left, key);
     h->right->color = BLACK; // Ensure the right child of h is black before joining.
     return {left, x, join(right, h, h->right)};
   }
-  if (h->key < key) {
+  if (key > h->key) {
     auto [left, x, right] = splitRec(h->right, key);
     h->left->color = BLACK; // Ensure the left child of h is black before joining.
     return {join(h->left, h, left), x, right};
@@ -268,7 +268,7 @@ Node *deleteMin(Node *root) {
  * @return The new root of the subtree after deleting the maximum node and balancing the tree.
  */
 Node *deleteMaxRec(Node *h) {
-  if (h->left->color == RED)
+  if (!h->left->isExternal && h->left->color == RED)
     h = rotateRight(h); // If the left child of h is red, rotate right to ensure that we are moving down a path with a
                         // red link, which allows us to maintain the properties of the Red-Black Tree during deletion.
   if (h->right->isExternal)

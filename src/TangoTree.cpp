@@ -176,7 +176,7 @@ Node *paste(Node *root, Node *q, Node *p) {
  * @return The new Tango Tree root after performing the Tango operation.
  */
 Node *tango(Node *root, Node *q) {
-  if (q->minDepth >= root->maxDepth)
+  if (root->maxDepth >= q->minDepth)
     cut(root, q->minDepth);             // remove all keys that are not in the preferred path anymore.
   auto [qq, pp] = search(root, q->key); // update q and p reference.
   return paste(root, qq, pp);           // insert the new keys in the root preferred path.
@@ -202,7 +202,10 @@ void showRec(Node *root, int indent = 0) {
 /* Tango Tree Operations. */
 
 /* Constructor. */
-TangoTree::TangoTree(int n) { root = buildTango(1, n); }
+TangoTree::TangoTree(int n) { 
+  root = buildTango(1, n);
+  root->isExternal = false; 
+ }
 
 /* Show. */
 void TangoTree::show() { showRec(root); }
@@ -211,6 +214,7 @@ void TangoTree::show() { showRec(root); }
 bool TangoTree::contains(int key) {
   auto [q, p] = search(root, key);
   while (q != Node::nil || q->key != key) { // repeat until success or fail in the search.
+    show(); 
     root = tango(root, q);                  // perform a tango operation to updated the root preferred path.
   }
   if (q == Node::nil) // failure search.

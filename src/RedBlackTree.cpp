@@ -163,11 +163,11 @@ Node *joinRec(Node *leftTree, Node *x, Node *rightTree) {
 
 Node *join(Node *leftTree, Node *x, Node *rightTree) {
   if (DEBUG)
-    assert(max(leftTree) < x->key &&
-           x->key < min(rightTree)); // Ensure that all keys in the left tree are less than x's key and all keys in the
-                                     // right tree are greater than x's key before joining. This test has a cost greater
-                                     // than the join operation itself, but it is useful for debugging and ensuring the
-                                     // correctness of the join operation.
+    assert(max(leftTree)->key < x->key &&
+           x->key < min(rightTree)->key); // Ensure that all keys in the left tree are less than x's key and all keys in
+                                          // the right tree are greater than x's key before joining. This test has a
+                                          // cost greater than the join operation itself, but it is useful for debugging
+                                          // and ensuring the correctness of the join operation.
 
   detach(x); // Detach x from its current position in the tree to prepare for joining.
 
@@ -309,27 +309,41 @@ Node *deleteNode(Node *h, int key) {
 
   // Find a node to use as separator (use min from right), since the above test guarantee that both left and right trees
   // are not empty.
-  int separator = min(right);
+  int separator = min(right)->key;
   right = deleteMin(right);
   return join(left, newNode(separator), right);
 }
 
+/* ExtractMin. */
+std::pair<Node *, Node *> extractMin(Node *root) {
+  Node *minNode = min(root);
+  root = deleteMin(root);
+  return {root, minNode};
+}
+
+/* ExtractMax. */
+std::pair<Node *, Node *> extractMax(Node *root) {
+  Node *maxNode = max(root);
+  root = deleteMax(root);
+  return {root, maxNode};
+}
+
 /* Min. */
 
-int min(Node *root) {
+Node *min(Node *root) {
   while (!root->left->isExternal)
     root = root->left; // Iteratively search for the minimum in the left subtree.
 
-  return root->key;
+  return root;
 }
 
 /* Max. */
 
-int max(Node *root) {
+Node *max(Node *root) {
   while (!root->right->isExternal)
     root = root->right; // Iteratively search for the maximum in the right subtree.
 
-  return root->key;
+  return root;
 }
 
 /* Print. */

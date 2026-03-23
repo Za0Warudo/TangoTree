@@ -180,23 +180,39 @@ Node *deleteMax(Node *root);
 Node *deleteNode(Node *h, int key);
 
 /**
+ * @brief Removes the minimum key node, and return a pointer to the tree new root and pointer to removed node.
+ *
+ * @param h The current root of the tree.
+ * @return A pair, the first element is the new tree root and the second one is the a min node pointer.
+ */
+std::pair<Node *, Node *> extractMin(Node *h);
+
+/**
+ * @brief Removes the maximum key node, and return a pointer to the tree new root and pointer to removed node.
+ *
+ * @param h The current root of the tree.
+ * @return A pair, the first element is the new tree root and the second one is the a max node pointer.
+ */
+std::pair<Node *, Node *> extractMax(Node *h);
+
+/**
  * @brief Return the minimum key value in the subtree rooted at the given node.
  *
  * @param root The root of the subtree to search.
- * @return int The minimum key value in the subtree.
+ * @return The minimum node in the subtree.
  * @note Precondition: The tree must not be empty.
  * @note Time Complexity: O(log(N)), where N is the number of nodes in the subtree.
  */
-int min(Node *root);
+Node* min(Node *root);
 /**
  * @brief Return the maximum key value in the subtree rooted at the given node.
  *
  * @param root The root of the subtree to search.
- * @return int The maximum key value in the subtree.
+ * @return int The maximum node in the subtree.
  * @note Precondition: The tree must not be empty.
  * @note Time Complexity: O(log(N)), where N is the number of nodes in the subtree.
  */
-int max(Node *root);
+Node* max(Node *root);
 
 /**
  * @brief Prints the Red-Black Tree rooted at the given node.

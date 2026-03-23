@@ -14,9 +14,10 @@
  *
  * The Tango Tree has a fundamental importance in the field of data structures and algorithms, particularly in the
  * context of dynamic trees and self-adjusting data structures. It was the first data structure to achieve a concrete
- * partial result in the dynamic optimality conjecture, which states that there exists a binary search tree that can perform any
- * sequence of search operations in time proportional to the optimal offline binary search tree for that sequence.
- * 
+ * partial result in the dynamic optimality conjecture, which states that there exists a binary search tree that can
+ * perform any sequence of search operations in time proportional to the optimal offline binary search tree for that
+ * sequence.
+ *
  * @version 1.0
  * @date 2026-03-15
  */
@@ -51,6 +52,12 @@ public:
    * @return true if the key is found in the Tango Tree, false otherwise.
    */
   bool contains(int key);
+
+  /**
+   * @brief Prints the Tango Tree in a human-readable format. This method is useful for debugging and visualization
+   * purposes, allowing users to see the structure of the Tango Tree and understand how the nodes are arranged.
+   */
+  void show();
 };
 
 #endif TANGOTREE_H

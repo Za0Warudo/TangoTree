@@ -16,10 +16,13 @@
  * @copyright Copyright (c) 2026
  */
 
-// includes
+// includes.
 #include "TangoTree.h"
 #include "RedBlackTree.h"
 #include <cassert>
+#include <iostream>
+
+/* Auxiliary functions. */
 
 /**
  * @brief Recursive method to build a Tango Tree based on a reference tree with the nodes in the range [l, r]. The
@@ -36,7 +39,7 @@
 Node *buildTango(int l, int r, int depth = 0) {
   if (l > r)
     return Node::nil;
-  int m = (r - l) + l / 2;
+  int m = l + (r - l) / 2;
   Node *left = buildTango(l, m - 1, depth + 1);
   Node *right = buildTango(m + 1, r, depth + 1);
   Node *middle = newNode(m, depth);
@@ -48,41 +51,41 @@ Node *buildTango(int l, int r, int depth = 0) {
 }
 
 /**
- * @brief Finds the predecessor key of the given depth in the subtree rooted at h and the min key of the subtree with
+ * @brief Finds the predecessor key of the given depth in the subtree rooted at h of the min key of the subtree with
  * depth greater than the given depth. If there is no predecessor with the given depth, it returns a default value (-1,
  * in this case) as the predecessor key.
  *
  * @param h The root of the subtree to search for the predecessor.
  * @param depth The depth for which to find the predecessor.
- * @return A pair containing the predecessor key and the minimum key of the subtree with depth greater than the given
+ * @return the predecessor key  of the subtree with depth greater than the given
  * depth.
  */
-std::pair<int, int> predecessor(Node *h, int depth) {
+int predecessor(Node *h, int depth) {
   if (h->left->maxDepth >= depth)
     return predecessor(h->left, depth);
   if (h->depth >= depth)
-    return {h->left->isExternal ? -1 : max(h->left)->key, h->key};
-  auto [p, l] = predecessor(h->right, depth);
-  return {p == -1 ? h->key : p, l};
+    return h->left->isExternal ? -1 : max(h->left)->key;
+  int p = predecessor(h->right, depth);
+  return p == -1 ? h->key : p;
 }
 
 /**
- * @brief Finds the successor key of the given depth in the subtree rooted at h and the max key of the subtree with
+ * @brief Finds the successor key of the given depth in the subtree rooted at h of the max key of the subtree with
  * depth greater than the given depth. If there is no successor with the given depth, it returns -1 as the successor
  * key.
  *
  * @param h The root of the subtree to search for the successor.
  * @param depth The depth for which to find the successor.
- * @return A pair containing the successor key and the maximum key of the subtree with depth greater than the given
+ * @return The successor key of the subtree with depth greater than the given
  * depth.
  */
-std::pair<int, int> successor(Node *h, int depth) {
+int successor(Node *h, int depth) {
   if (h->right->maxDepth >= depth)
     return successor(h->right, depth);
   if (h->depth >= depth)
-    return {h->right->isExternal ? -1 : min(h->right)->key, h->key};
-  auto [s, r] = successor(h->left, depth);
-  return {s == -1 ? h->key : s, r};
+    return h->right->isExternal ? -1 : min(h->right)->key;
+  int s = successor(h->left, depth);
+  return s == -1 ? h->key : s;
 }
 
 /**
@@ -96,8 +99,8 @@ std::pair<int, int> successor(Node *h, int depth) {
  * @return The new Tango Tree root after removing the keys.
  */
 Node *cut(Node *root, int depth) {
-  auto [pred, l] = predecessor(root, depth);
-  auto [succ, r] = successor(root, depth);
+  int pred = predecessor(root, depth);
+  int succ = successor(root, depth);
 
   // split the root into tl (< pred) xl (= pred) tm ((> pred, succ <)) xr (= succ) tr (> succ), some ranges, may get a
   // nil node if no key in the tree satisfies the condition.
@@ -162,6 +165,16 @@ Node *paste(Node *root, Node *q, Node *p) {
   return root;
 }
 
+/**
+ * @brief The core operation of the Tango Tree, which performs a Tango operation on the given root tree and the new
+ * preferred path tree q. The Tango operation updates the root preferred path by removing keys that are not in the new
+ * preferred path anymore and inserting the new preferred path tree q in the root preferred path. The method returns the
+ * new Tango Tree root after performing the Tango operation.
+ *
+ * @param root The root of the Tango Tree.
+ * @param q The root of the new preferred path tree to be inserted in the root preferred path.
+ * @return The new Tango Tree root after performing the Tango operation.
+ */
 Node *tango(Node *root, Node *q) {
   if (q->minDepth >= root->maxDepth)
     cut(root, q->minDepth);             // remove all keys that are not in the preferred path anymore.
@@ -169,8 +182,32 @@ Node *tango(Node *root, Node *q) {
   return paste(root, qq, pp);           // insert the new keys in the root preferred path.
 }
 
+/* Debug functions. */
+
+/**
+ * @brief Recursively prints the Tango Tree in a human-readable format.
+ *
+ * @param root The root node of the tree to print.
+ * @param indent The indentation level for formatting.
+ */
+void showRec(Node *root, int indent = 0) {
+  if (root == Node::nil)
+    return;
+  showRec(root->right, indent + 4);
+  std::cout << std::string(indent, ' ');
+  std::cout << '(' << root->key << ',' << (root->isExternal ? "E" : "I") << ")\n";
+  showRec(root->left, indent + 4);
+}
+
+/* Tango Tree Operations. */
+
+/* Constructor. */
 TangoTree::TangoTree(int n) { root = buildTango(1, n); }
 
+/* Show. */
+void TangoTree::show() { showRec(root); }
+
+/* Contains. */
 bool TangoTree::contains(int key) {
   auto [q, p] = search(root, key);
   while (q != Node::nil || q->key != key) { // repeat until success or fail in the search.

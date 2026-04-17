@@ -22,6 +22,9 @@
 #include <cassert>
 #include <iostream>
 
+
+void showRec(Node *root, int indent = 0);
+
 /* Auxiliary functions. */
 
 /**
@@ -103,6 +106,8 @@ Node *cut(Node *root, int depth) {
   int pred = predecessor(root, depth);
   int succ = successor(root, depth);
 
+  std::cout << "Cutting with pred " << pred << " and succ " << succ << std::endl;
+
   // split the root into tl (< pred) xl (= pred) tm ((> pred, succ <)) xr (= succ) tr (> succ), some ranges, may get a
   // nil node if no key in the tree satisfies the condition.
 
@@ -112,7 +117,7 @@ Node *cut(Node *root, int depth) {
 
   std::cout << "breakpoint 1" << std::endl;
 
-  if (pred)
+  if (pred > -1)
     std::tie(tl, xl, taux) = split(root, pred);
 
   Node *tm = taux;
@@ -121,7 +126,7 @@ Node *cut(Node *root, int depth) {
 
   std::cout << "breakpoint 2" << std::endl;
 
-  if (succ)
+  if (succ > -1)
     std::tie(tm, xr, tr) = split(tm, succ);
 
   // joins the tree ensuring that tm is not in the preferred tree anymore.
@@ -190,7 +195,9 @@ Node *tango(Node *root, Node *q) {
   std::cout << "Checking for cut operation" << std::endl; 
   if (root->maxDepth >= q->minDepth) { 
     std::cout << "Performing cut operation" << std::endl;
-    cut(root, q->minDepth);             // remove all keys that are not in the preferred path anymore.
+    root = cut(root, q->minDepth);             // remove all keys that are not in the preferred path anymore.
+    std::cout << "After cut operation" << std::endl;
+    showRec(root);
   }
   std::cout << "Performing paste operation" << std::endl;
   auto [qq, pp] = search(root, q->key); // update q and p reference.
@@ -205,7 +212,7 @@ Node *tango(Node *root, Node *q) {
  * @param root The root node of the tree to print.
  * @param indent The indentation level for formatting.
  */
-void showRec(Node *root, int indent = 0) {
+void showRec(Node *root, int indent) {
   if (root == Node::nil)
     return;
   showRec(root->right, indent + 4);

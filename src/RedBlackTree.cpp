@@ -28,7 +28,7 @@
  * child in the red-black tree. It is used to simplify the implementation by avoiding the need to check for null
  * pointers. The nil node is always black and is considered an external node. It has a key value that is not used (for
  * positive integer keys, we can use -1 for instance). The left and right pointers of the nil node point to itself,
- * creating a cycle. The depth and blackHeight of the nil node are set to 0. The maxDepth and minDepth are set to
+ * creating a cycle. The depth and blackHeight of the nil node are set to -1. The maxDepth and minDepth are set to
  * SHORT_MIN and SHORT_MAX respectively. This allows us to treat the nil node as a leaf in the tree, which simplifies
  * the operation logic.
  */
@@ -50,7 +50,7 @@ Node *Node::nil = [] {
   n->maxDepth = SHORT_MIN; // The maximum depth of the nil node is set to the minimum possible value, since it is an
                            // external node and has no children.
 
-  n->blackHeight = 0; // The height of the nil node is set to 0, it's the unique node with height 0.
+  n->blackHeight = -1; // The height of the nil node is set to -1, it's the unique node with height -1.
 
   return n; // Return the pointer to the initialized nil node.
 }(); // Initialize the nil node.
@@ -144,14 +144,14 @@ Node *insert(Node *root, int key) {
  */
 Node *joinRec(Node *leftTree, Node *x, Node *rightTree) {
   if (leftTree->blackHeight > rightTree->blackHeight) {
-    leftTree->left = joinRec(leftTree->left, x,
+    leftTree->right = joinRec(leftTree->right, x,
                              rightTree); // If the left tree has a greater black height, join the
                                          // left subtree of the left tree with x and the right tree.
     return balance(leftTree);
   }
   if (leftTree->blackHeight < rightTree->blackHeight) {
-    rightTree->right = joinRec(leftTree, x,
-                               rightTree->right); // If the right tree has a greater black height, join the
+    rightTree->left = joinRec(leftTree, x,
+                               rightTree->left); // If the right tree has a greater black height, join the
                                                   // right tree with x and the right subtree of the right tree.
     return balance(rightTree);
   }
@@ -163,8 +163,8 @@ Node *joinRec(Node *leftTree, Node *x, Node *rightTree) {
 
 Node *join(Node *leftTree, Node *x, Node *rightTree) {
   if (DEBUG)
-    assert(max(leftTree)->key < x->key &&
-           x->key < min(rightTree)->key); // Ensure that all keys in the left tree are less than x's key and all keys in
+    assert((leftTree->isExternal || max(leftTree)->key < x->key) &&
+           (rightTree->isExternal || x->key < min(rightTree)->key)); // Ensure that all keys in the left tree are less than x's key and all keys in
                                           // the right tree are greater than x's key before joining. This test has a
                                           // cost greater than the join operation itself, but it is useful for debugging
                                           // and ensuring the correctness of the join operation.
@@ -233,7 +233,7 @@ std::tuple<Node *, Node *, Node *> split(Node *h, int key) {
  */
 Node *deleteMinRec(Node *h) {
   if (h->left->isExternal)
-    return h->left->right; // If the left child of h is nil, then h is the minimum node, so we return it's right pointer
+    return h->right; // If the left child of h is nil, then h is the minimum node, so we return it's right pointer
                            // (nil for nil, and useful for tango tree).
   if (h->left->color == BLACK &&
       h->left->left->color ==
@@ -272,7 +272,7 @@ Node *deleteMaxRec(Node *h) {
     h = rotateRight(h); // If the left child of h is red, rotate right to ensure that we are moving down a path with a
                         // red link, which allows us to maintain the properties of the Red-Black Tree during deletion.
   if (h->right->isExternal)
-    return h->right->left; // If the right child of h is nil, then h is the maximum
+    return h->left; // If the right child of h is nil, then h is the maximum
                            // node, so we return it's left pointer (nil for nil, and useful for tango tree).
   if (h->right->color == BLACK && h->right->left->color == BLACK) // Guarantee that the right child of h is not a 2-node
                                                                   // by moving a red link right if necessary.
@@ -374,11 +374,11 @@ void update(Node *h) {
                             // node or another tree root.
 
   // Update Red-Black Tree properties.
-  h->blackHeight = std::max(h->left->blackHeight + h->left->color == BLACK ? 1 : 0, h->right->blackHeight + 1);
+  h->blackHeight = std::max(h->left->blackHeight + (h->left->color == BLACK ? 1 : 0), h->right->blackHeight + 1);
 
   // Update Auxiliary tree properties.
-  h->minDepth = std::min(std::min(h->left->minDepth, h->right->minDepth), h->depth);
-  h->maxDepth = std::max(std::max(h->left->maxDepth, h->right->maxDepth), h->depth);
+  h->minDepth = std::min(std::min(h->left->isExternal ? SHORT_MAX : h->left->minDepth, h->right->isExternal ? SHORT_MAX : h->right->minDepth), h->depth);
+  h->maxDepth = std::max(std::max(h->left->isExternal ? SHORT_MIN : h->left->maxDepth, h->right->isExternal ? SHORT_MIN : h->right->maxDepth), h->depth);
 }
 
 /**
@@ -467,6 +467,8 @@ Node *balance(Node *h) {
     h = rotateRight(h); // fix two reds in a row on the left.
   if (h->left->color == RED && h->right->color == RED)
     h = flipColors(h); // split 4-node.
+
+  update(h);   
   return h;
 }
 

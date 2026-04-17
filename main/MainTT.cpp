@@ -41,6 +41,9 @@ int main() {
   std::cin >> n;
   TangoTree t = TangoTree(n);
 
+  t.show(); 
+  std::cout << "----" << std::endl; 
+
   while (std::cin >> key) {
     std::cout << (t.contains(key) ? "True" : "False") << std::endl;
   }

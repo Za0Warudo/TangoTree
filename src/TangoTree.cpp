@@ -47,6 +47,7 @@ Node *buildTango(int l, int r, int depth = 0) {
   middle->right = right;
   middle->depth = middle->minDepth = middle->maxDepth = depth;
   middle->isExternal = true;
+  middle->blackHeight = -1;
   return middle;
 }
 
@@ -109,6 +110,8 @@ Node *cut(Node *root, int depth) {
   Node *xl = Node::nil;
   Node *taux = root;
 
+  std::cout << "breakpoint 1" << std::endl;
+
   if (pred)
     std::tie(tl, xl, taux) = split(root, pred);
 
@@ -116,19 +119,26 @@ Node *cut(Node *root, int depth) {
   Node *xr = Node::nil;
   Node *tr = Node::nil;
 
+  std::cout << "breakpoint 2" << std::endl;
+
   if (succ)
     std::tie(tm, xr, tr) = split(tm, succ);
 
   // joins the tree ensuring that tm is not in the preferred tree anymore.
 
   tm->isExternal = true;
+  tm->blackHeight = -1;
 
   Node *tt = tm;
+
+  std::cout << "breakpoint 3" << std::endl;
 
   if (xl != Node::nil)
     tt = join(tl, xl, tm);
 
   Node *t = tt;
+
+  std::cout << "breakpoint 4" << std::endl;
 
   if (xr != Node::nil)
     t = join(tt, xr, tr);
@@ -149,6 +159,7 @@ Node *cut(Node *root, int depth) {
 Node *paste(Node *root, Node *q, Node *p) {
   assert(root->maxDepth < q->minDepth); // Validates the precondition
   q->isExternal = false;
+  update(q); // Update the infos of q, since it is not an external node anymore.
   if (p->left == q) {
     auto [qq, min] = extractMin(q);
     p->left = min->left;
@@ -176,8 +187,12 @@ Node *paste(Node *root, Node *q, Node *p) {
  * @return The new Tango Tree root after performing the Tango operation.
  */
 Node *tango(Node *root, Node *q) {
-  if (root->maxDepth >= q->minDepth)
+  std::cout << "Checking for cut operation" << std::endl; 
+  if (root->maxDepth >= q->minDepth) { 
+    std::cout << "Performing cut operation" << std::endl;
     cut(root, q->minDepth);             // remove all keys that are not in the preferred path anymore.
+  }
+  std::cout << "Performing paste operation" << std::endl;
   auto [qq, pp] = search(root, q->key); // update q and p reference.
   return paste(root, qq, pp);           // insert the new keys in the root preferred path.
 }
@@ -195,7 +210,7 @@ void showRec(Node *root, int indent = 0) {
     return;
   showRec(root->right, indent + 4);
   std::cout << std::string(indent, ' ');
-  std::cout << '(' << root->key << ',' << (root->isExternal ? "E" : "I") << ")\n";
+  std::cout << '(' << root->key << ',' << (root->isExternal ? "E" : "I") << ", " << root->blackHeight << ")\n";
   showRec(root->left, indent + 4);
 }
 
@@ -205,6 +220,7 @@ void showRec(Node *root, int indent = 0) {
 TangoTree::TangoTree(int n) { 
   root = buildTango(1, n);
   root->isExternal = false; 
+  root->blackHeight = 0;
  }
 
 /* Show. */
@@ -212,11 +228,17 @@ void TangoTree::show() { showRec(root); }
 
 /* Contains. */
 bool TangoTree::contains(int key) {
+  std::cout << "Searching for key " << key << " in the Tango Tree:\n";
+  show(); 
   auto [q, p] = search(root, key);
-  while (q != Node::nil || q->key != key) { // repeat until success or fail in the search.
-    show(); 
+  while (q->isExternal && q != Node::nil) { // repeat until success or fail in the search.
     root = tango(root, q);                  // perform a tango operation to updated the root preferred path.
+    std::tie(q, p) = search(root, key);     // update q and p reference for the next iteration.
   }
+  
+  std::cout << "After searching for key " << key << " in the Tango Tree:\n";  
+  show();
+
   if (q == Node::nil) // failure search.
     return false;
   return true; // successfully search.

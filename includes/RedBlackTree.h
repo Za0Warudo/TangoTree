@@ -22,8 +22,8 @@
 #include <tuple>
 
 // defines
-#define SHORT_MAX 32767  // maximum value for a short number.
-#define SHORT_MIN -32768 // minimum value for a short number.
+#define SHORT_MAX (short)32767  // maximum value for a short number.
+#define SHORT_MIN (short)-32768 // minimum value for a short number.
 #define DEBUG true       // flag for debugging
 
 /**
@@ -221,5 +221,9 @@ Node* max(Node *root);
  * @param indent The indentation level for printing.
  */
 void print(Node *root, int indent = 0);
+
+
+// TODO: insert docs here
+void update(Node *h);
 
 #endif // REDBLACKTREE_H

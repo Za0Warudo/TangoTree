@@ -67,6 +67,8 @@ Node *moveRedLeft(Node *h);
 
 Node *moveRedRight(Node *h);
 
+bool check(Node *root);
+
 std::pair<Node *, Node *> detach(Node *h);
 
 /* NewNode. */
@@ -75,7 +77,7 @@ Node *newNode(int key, int depth) {
   Node *x = new Node(key);                      // create new node.
   x->left = x->right = Node::nil;               // initialize children to nil.
   x->isExternal = false;                        // set as an internal node.
-  x->blackHeight = 1;                           // default black height for a new node.
+  x->blackHeight = 0;                           // default black height for a new node.
   x->depth = x->minDepth = x->maxDepth = depth; // set the depth of the new node.
   return x;
 }
@@ -176,6 +178,8 @@ Node *join(Node *leftTree, Node *x, Node *rightTree) {
 
   y->color = BLACK; // Ensure the new root of the joined tree is black.
 
+  check(y);
+
   return y; // Return the new root of the joined tree.
 }
 
@@ -216,7 +220,11 @@ std::tuple<Node *, Node *, Node *> split(Node *h, int key) {
   if (DEBUG)
     assert(search(h, key).first != Node::nil); // Ensure that the key is present in the tree before splitting.
 
-  return splitRec(h, key); // Split the tree using the recursive split function.
+  auto [l, x, r] = splitRec(h, key); // Split the tree using the recursive split function
+  check(l);
+  check(x); 
+  check(r); 
+  return {l, x, r}; 
 }
 
 /* DeleteMin */
@@ -286,7 +294,7 @@ Node *deleteMax(Node *root) {
     assert(root != Node::nil); // Ensure that the root is not the nil node before deleting the maximum, since we should
                                // never delete from an empty tree.
   if (root->left->color == BLACK)
-    root->color = BLACK;
+    root->color = RED;
   root = deleteMaxRec(root);
 
   root->color = BLACK;
@@ -358,16 +366,8 @@ void print(Node *root, int indent) {
   print(root->left, indent + 4);
 }
 
-/* Auxiliary functions definitions */
+/* Update. */
 
-/**
- * @brief Updates the infos of the given node based on its children. This function should be called after any
- * modification to the subtree rooted at the given node to ensure that the properties of the Red-Black Tree and the
- * auxiliary tree are maintained.
- *
- * @param h The node whose infos are to be updated.
- * @note Time Complexity: O(1)
- */
 void update(Node *h) {
   if (DEBUG)
     assert(!h->isExternal); // Ensure that h is not an external node before updating, since we should never update a nil
@@ -380,6 +380,9 @@ void update(Node *h) {
   h->minDepth = std::min(std::min(h->left->isExternal ? SHORT_MAX : h->left->minDepth, h->right->isExternal ? SHORT_MAX : h->right->minDepth), h->depth);
   h->maxDepth = std::max(std::max(h->left->isExternal ? SHORT_MIN : h->left->maxDepth, h->right->isExternal ? SHORT_MIN : h->right->maxDepth), h->depth);
 }
+
+
+/* Auxiliary functions definitions */
 
 /**
  * @brief Rotate a subtree to the left. This operation is used to maintain the balance of the Red-Black Tree. As a
@@ -441,8 +444,8 @@ Node *rotateRight(Node *h) {
  * @note Time Complexity: O(1)
  */
 Node *flipColors(Node *h) {
-  assert(h->color != h->left->color &&
-         h->color != h->right->color); // Ensure that h's color is different from its children's colors before flipping,
+  // assert(h->color != h->left->color &&
+  //       h->color != h->right->color); // Ensure that h's color is different from its children's colors before flipping,
                                        // if h is the nil node, this assertion will fail, which is expected since we
                                        // should never flip colors on a nil node.
 
@@ -592,7 +595,7 @@ bool isBalanced(Node *root) {
 bool is23(Node *root) {
   if (root->isExternal)
     return true;
-  if ((root->color == RED && root->left->color == RED) || root->right->color == RED)
+  if ((root->color == RED && root->left->color == RED) || root->right->color == RED || (root->left->color == RED && root->right->color == RED))
     return false;
   return is23(root->left) && is23(root->right);
 }

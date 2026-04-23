@@ -222,8 +222,14 @@ Node* max(Node *root);
  */
 void print(Node *root, int indent = 0);
 
-
-// TODO: insert docs here
+/**
+ * @brief Updates the infos of the given node based on its children. This function should be called after any
+ * modification to the subtree rooted at the given node to ensure that the properties of the Red-Black Tree and the
+ * auxiliary tree are maintained.
+ *
+ * @param h The node whose infos are to be updated.
+ * @note Time Complexity: O(1)
+ */
 void update(Node *h);
 
 #endif // REDBLACKTREE_H

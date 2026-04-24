@@ -24,7 +24,7 @@
 // defines
 #define SHORT_MAX (short)32767  // maximum value for a short number.
 #define SHORT_MIN (short)-32768 // minimum value for a short number.
-#define DEBUG true       // flag for debugging
+#define DEBUG true              // flag for debugging
 
 /**
  * @brief Enum to represent the color of a node in the Red-Black Tree. A node can be either RED or BLACK.
@@ -203,7 +203,7 @@ std::pair<Node *, Node *> extractMax(Node *h);
  * @note Precondition: The tree must not be empty.
  * @note Time Complexity: O(log(N)), where N is the number of nodes in the subtree.
  */
-Node* min(Node *root);
+Node *min(Node *root);
 /**
  * @brief Return the maximum key value in the subtree rooted at the given node.
  *
@@ -212,7 +212,7 @@ Node* min(Node *root);
  * @note Precondition: The tree must not be empty.
  * @note Time Complexity: O(log(N)), where N is the number of nodes in the subtree.
  */
-Node* max(Node *root);
+Node *max(Node *root);
 
 /**
  * @brief Prints the Red-Black Tree rooted at the given node.

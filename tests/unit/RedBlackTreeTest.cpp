@@ -363,7 +363,7 @@ TEST_F(JoinTreeTest, JoinBothTreesEmpty) {
     Node* emptyRight = Node::nil;
     mergedTree = join(emptyLeft, x, emptyRight);
 
-    EXPECT_EQ(mergedTree->key, 7);
+    EXPECT_EQ(mergedTree->key, key_m);
     EXPECT_EQ(mergedTree->left, Node::nil);
     EXPECT_EQ(mergedTree->right, Node::nil);
 }

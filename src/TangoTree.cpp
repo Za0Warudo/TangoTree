@@ -155,13 +155,13 @@ Node *paste(Node *root, Node *q, Node *p) {
   q->isExternal = false;
   update(q);     // Update the infos of q, since it is not an external node anymore.
   if (p->left == q) {
-    auto [qq, min] = extractMin(q);
+    auto [qq, min] = deleteMin(q);
     p->left = min->left;
     auto [tl, pp, tr] = split(root, p->key);
     Node *taux = join(qq, pp, tr);
     root = join(tl, min, taux);
   } else {
-    auto [qq, max] = extractMax(q);
+    auto [qq, max] = deleteMax(q);
     p->right = max->right;
     auto [tl, pp, tr] = split(root, p->key);
     Node *taux = join(tl, pp, qq);

@@ -7,7 +7,7 @@
  *
  * Implementation of the red-black tree data structure defined in RedBlackTree.h. The implementation includes the basic operations of a red-black tree, such as
  * insertion, deletion of the min and max nodes, searching for a key, and the auxiliary operations join and split. This implementation is designed to be clear
- * and easy to understanding for the context the tango tree use.
+ * and easy to understand for the context the tango tree use.
  */
 
 // includes.
@@ -56,7 +56,7 @@ Node *newNode(int key, int depth) {
 /* Search */
 
 /**
- * @brief Recursive method to search a key into the given subtree. If an external node is reached or found the node with the given key return it and its parent.
+ * @brief Recursive method to search a key into the given subtree. If an external node is reached or the node with the given key is found, return it and its parent.
  * If the key is smaller than the current node's key, search into the left subtree; if it is greater, search into the right subtree.
  *
  * @param h The subtree root.
@@ -77,7 +77,7 @@ std::pair<Node *, Node *> search(Node *h, int key) { return searchRec(h, key); }
 /* Insert. */
 
 /**
- * @brief Recursive method to insert a key into the given subtree. If an external node is reached, creates and return a new node with the given key. If the key
+ * @brief Recursive method to insert a key into the given subtree. If an external node is reached, creates and returns a new node with the given key. If the key
  * is smaller than the current node's key, we insert into the left subtree; if it is greater, we insert into the right subtree. After inserting, balances the
  * subtree rooted at h to maintain the properties of the red-black tree.
  *
@@ -87,7 +87,7 @@ std::pair<Node *, Node *> search(Node *h, int key) { return searchRec(h, key); }
  */
 Node *insertRec(Node *h, int key) {
   if (h->isExternal)
-    return newNode(key);     // Reach the nil node, creates and return a new node with the given key.
+    return newNode(key);     // Reached the nil node, creates and returns a new node with the given key.
   if (key < h->key)
     h->left = insertRec(h->left, key);     // If the key is smaller than the current node's key, insert into the left subtree.
   else if (key > h->key)
@@ -156,6 +156,7 @@ Node *join(Node *leftTree, Node *x, Node *rightTree) {
 std::tuple<Node *, Node *, Node *> splitRec(Node *h, int key) {
   if (key < h->key) {
     auto [left, x, right] = splitRec(h->left, key);
+    h->right->color = BLACK;     // Ensure the left child of h is black before joining.
     return {left, x, join(right, h, h->right)};
   }
   if (key > h->key) {
@@ -165,7 +166,7 @@ std::tuple<Node *, Node *, Node *> splitRec(Node *h, int key) {
   }
 
   auto [left, right] = detach(h);
-  left->color = BLACK;         // Ensure that he left root subtree is black.
+  left->color = right->color = BLACK;         // Ensure that the left root subtree is black.
   return {left, h, right};     // Return the left subtree, the node with the given key, and the right subtree as a tuple.
 }
 
@@ -210,13 +211,13 @@ std::pair<Node *, Node *> deleteMin(Node *root) {
  * delete it. If the right child of h is black and its left child is also black, we need to move a red link to the right to ensure that we are moving down a
  * path with a red link. this allows to maintain the balance property during deletion.
  *
- * @param h The subtre root. Should not be nil.
+ * @param h The subtree root. Should not be nil.
  * @return The new root of the subtree after deleting the maximum node.
  */
 std::pair<Node *, Node *> deleteMaxRec(Node *h) {
   if (!h->left->isExternal && h->left->color == RED)
     h = rotateRight(h);     // If the left child of h is red, rotate right to ensure that we are moving down a path with a red link, which allows us to
-                            // maintain the balnce of the red-black tree during deletion.
+                            // maintain the balance of the red-black tree during deletion.
   if (h->right->isExternal)
     return {h, h->left};     // If the right child of h is nil, then h is the maximum  node, so we return its left pointer (nil).
   if (h->right->color == BLACK &&

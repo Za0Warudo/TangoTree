@@ -44,7 +44,7 @@ struct Node {
   Color color;     // The node color (RED or BLACK).
 
   short blackHeight;     // Black height of the node in the red-black tree. Since a tree with n nodes has height at most 2*log(n), we can use a short to store
-                         // the black height, which is more memory efficient than use an integer.
+                         // the black height, which is more memory efficient than using an integer.
 
   // Tango Tree specific fields.
 
@@ -62,12 +62,12 @@ struct Node {
 // Red-Black Tree methods. //
 
 /**
- * @brief Create a new node with the given key and depth. The new node is initialized with de folowing default values for its fields: The left and right
+ * @brief Create a new node with the given key and depth. The new node is initialized with de following default values for its fields: The left and right
  * children are set to the nil node, the color is set to RED, the black height is set to 0, the isExternal flag is set to false, and the minDepth and maxDepth
  * are set to the given depth.
  *
  * @param key The new node key value.
- * @param depth The node depth (used in the the tango tree construction)
+ * @param depth The node depth (used in the tango tree construction)
  * @return A pointer to the newly created node.
  * @note Time Complexity: O(1).
  */
@@ -78,14 +78,14 @@ Node *newNode(int key, int depth = 0);
  * last visited node otherwise.
  *
  * @param h The subtree root node.
- * @param key The search for key.
+ * @param key The search key.
  * @return A pointer to the node and to its parent if found, or an external node and the last visited node otherwise.
  * @note Time Complexity: O(log(N)), where N is the number of nodes in the subtree.
  */
 std::pair<Node *, Node *> search(Node *root, int key);
 
 /**
- * @brief inserts a key into the given red-black tree.
+ * @brief Inserts a key into the given red-black tree.
  *
  * @param root The tree root.
  * @param key The key to insert into the tree.
@@ -95,7 +95,7 @@ std::pair<Node *, Node *> search(Node *root, int key);
 Node *insert(Node *root, int key);
 
 /**
- * @brief Joins two Red-Black Trees and a node into a single tree. As a precondition, all keys in the left tree must be smaller than the given node's key, and
+ * @brief Joins two Red-Black Trees and a node into a single red-black tree. As a precondition, all keys in the left tree must be smaller than the given node's key, and
  * all keys in the right tree must be greater than the given node's key.
  *
  * @param leftTree The root of the left tree.
@@ -104,7 +104,7 @@ Node *insert(Node *root, int key);
  * @return The root of the new tree formed by joining the left tree, the node, and the right tree.
  * @note Precondition: All the keys in the left tree must be smaller than the key in the given node. All the keys in the right tree must be greater than the key
  * in the given node.
- * @note Time Complexity: O(|h1 - h2|), where h1 is the black height of the left tree and h2 is the black height of the right tree.
+ * @note Time Complexity: O(|h1 - h2|), where h1 is the height of the left tree and h2 is the height of the right tree.
  */
 Node *join(Node *leftTree, Node *x, Node *rightTree);
 
@@ -123,7 +123,7 @@ Node *join(Node *leftTree, Node *x, Node *rightTree);
 std::tuple<Node *, Node *, Node *> split(Node *h, int key);
 
 /**
- * @brief Delete and return the node with the min key in the red-black tree.
+ * @brief Deletes and returns the node with the min key in the red-black tree.
  *
  * @param root The subtree root.
  * @return The min node and the new subtree root after deleting the minimum node.
@@ -133,7 +133,7 @@ std::tuple<Node *, Node *, Node *> split(Node *h, int key);
 std::pair<Node *, Node*> deleteMin(Node *root);
 
 /**
- * @brief Delete and return the node with the maximum key in the red-black tree.
+ * @brief Deletes and returns the node with the maximum key in the red-black tree.
  *
  * @param root The subtree root.
  * @return The max node and the new subtree root after deleting the maximum node.
@@ -143,7 +143,7 @@ std::pair<Node *, Node*> deleteMin(Node *root);
 std::pair<Node *, Node*> deleteMax(Node *root);
 
 /**
- * @brief Return the minimum key value in the given subtree.
+ * @brief Returns the minimum key value in the given subtree.
  *
  * @param root The subtree root.
  * @return The minimum subtree node.
@@ -152,7 +152,7 @@ std::pair<Node *, Node*> deleteMax(Node *root);
  */
 Node *min(Node *root);
 /**
- * @brief Return the maximum key value in the given subtree.
+ * @brief Returns the maximum key value in the given subtree.
  *
  * @param root The subtree root.
  * @return int The maximum subtree node.

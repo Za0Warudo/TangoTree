@@ -36,8 +36,9 @@ class TangoTree {
 private:
   Node *root; // The Tango Tree's root node.
 
+  int size; // The size of the Tango Tree.
+
 public:
-  
 
   /**
   * @brief Construct a new Tango Tree object
@@ -69,6 +70,12 @@ public:
    * @brief Recursively collects all roots in-order from the external nodes of the Tango Tree in a vector.
    */
   std::vector<Node*> getAllAuxiliary(); 
+
+  /**
+   * @brief Gets the size of the Tango Tree.
+   * @return The number of nodes in the Tango Tree.
+   */
+  int getSize(); 
 
   /**
    * @brief Prints the Tango Tree in a human-readable format. This method is useful for debugging and visualization

@@ -24,6 +24,7 @@
 
 // includes. //
 #include "RedBlackTree.h"
+#include <vector>
 
 /**
  * @brief A class representing a Tango Tree data structure. A Tango Tree is a self-adjusting binary search tree that
@@ -36,12 +37,16 @@ private:
   Node *root; // The Tango Tree's root node.
 
 public:
+  
+
   /**
-   * @brief Construct a new Tango Tree object
-   * @param n The number of nodes in the reference tree. The constructor will build a Tango Tree based on a reference
-   * tree with n nodes (1 to n).
-   */
+  * @brief Construct a new Tango Tree object
+  * @param n The number of nodes in the reference tree. The constructor will build a Tango Tree based on a reference
+  * tree with n nodes (1 to n).
+  */
   TangoTree(int n);
+
+  // Operations. //
 
   /**
    * @brief Checks if the Tango Tree contains the given key. This operation performs a search for the specified key in
@@ -52,6 +57,18 @@ public:
    * @return true if the key is found in the Tango Tree, false otherwise.
    */
   bool contains(int key);
+
+  // Test Functions. // 
+
+  /**
+   * @brief Recursively collects all keys in-order from the Tango Tree in a vector.
+   */
+  std::vector<int> keys();
+
+  /**
+   * @brief Recursively collects all roots in-order from the external nodes of the Tango Tree in a vector.
+   */
+  std::vector<Node*> getAllAuxiliary(); 
 
   /**
    * @brief Prints the Tango Tree in a human-readable format. This method is useful for debugging and visualization

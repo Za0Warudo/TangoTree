@@ -215,6 +215,37 @@ void showRec(Node *root, int indent) {
   showRec(root->left, indent + 4);
 }
 
+/* Test Functions. */
+
+/**
+ * @brief Recursively collects all keys in-order from the Tango Tree in a vector.
+ *
+ * @param root The root node of the tree to traverse.
+ * @param v The vector to store the collected keys.
+ */
+void keysRec(Node *root, std::vector<int> &v) {
+  if (root == Node::nil)
+    return;
+  keysRec(root->left, v);
+  v.push_back(root->key);
+  keysRec(root->right, v);
+}
+
+/**
+  * @brief Recursively collects all roots in-order from the external nodes of the Tango Tree in a vector.
+  * 
+  * @param root The root node of the tree to traverse.
+  * @param v The vector to store the collected keys.
+ */
+void getAllAuxiliaryRec(Node *root, std::vector<Node*> &v) {
+  if (root == Node::nil)
+    return;
+  getAllAuxiliaryRec(root->left, v);
+  if (root->isExternal) 
+    v.push_back(root);
+  getAllAuxiliaryRec(root->right, v);
+}
+
 /* Tango Tree Operations. */
 
 /* Constructor. */
@@ -238,4 +269,18 @@ bool TangoTree::contains(int key) {
   if (q == Node::nil)     // failure search.
     return false;
   return true;     // successfully search.
+}
+
+/* Get Keys. */
+std::vector<int> TangoTree::keys() {
+  std::vector<int> v;
+  keysRec(root, v);
+  return v;
+}
+
+/* Get All Auxiliary. */
+std::vector<Node*> TangoTree::getAllAuxiliary() {
+  std::vector<Node*> v;
+  getAllAuxiliaryRec(root, v);
+  return v;
 }

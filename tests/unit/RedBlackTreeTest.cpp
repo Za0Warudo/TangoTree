@@ -7,7 +7,7 @@
  **************************************************************/
 
 /**
- * @brief Validates if the given tree is a binary search tree.
+ * @brief Validates if the given RBT is a BST.
  * Ensures that for every node:
  * - All keys in the left subtree are strictly less than the node's key.
  * - All keys in the right subtree are strictly greater than the node's key.
@@ -16,7 +16,7 @@
  * @param min The lower bound for the current node's key.
  * @param max The upper bound for the current node's key.
  * @return True, if the subtree is a valid BST; false, otherwise.
- * @note Time Complexity: O(N), where N is the number of nodes in the subtree.
+ * @note Time Complexity: O(N), where N is the number of nodes in the tree.
  */
 bool isBST(Node *root, int min = INT_MIN, int max = INT_MAX) {
     if (root->isExternal) return true;
@@ -25,12 +25,12 @@ bool isBST(Node *root, int min = INT_MIN, int max = INT_MAX) {
 }
 
 /**
- * @brief Verifies if the given red-black tree is a balanced tree.
- * A subtree is considered balanced if every path from the current root
- * to a descendant leaf contains the same number of black nodes.
+ * @brief Verifies if the given RBT is a balanced tree.
+ * A subtree is considered balanced if every path from the current root, disconsidering itself,
+ * to NIL contains the same number of black nodes.
  *
  * @param root The tree root.
- * @return true, if the black-height is consistent across all paths; false, otherwise.
+ * @return True, if the black height is consistent across all paths; false, otherwise.
  * @note Time Complexity: O(N), where N is the number of nodes in the subtree.
  */
 bool isBalanced(Node *root) {
@@ -39,15 +39,14 @@ bool isBalanced(Node *root) {
     return isBalanced(root->left) && isBalanced(root->right);
 }
 
-
 /**
- * @brief Validates the 2-3 tree structural invariants in the given subtree.
- * A valid left-leaning red-black tree must satisfy the following conditions:
+ * @brief Validates the 2-3 tree structural invariants in the given RBT.
+ * A valid LLRBT tree must satisfy two conditions:
  * - No right-leaning red links (all red links must be left children).
  * - No two consecutive red links in any path (no "4-node" violations).
  *
  * @param root The tree root.
- * @return true, if the subtree satisfies all LLRBT properties; false, otherwise.
+ * @return True, if the subtree satisfies all LLRBT properties; false, otherwise.
  * @note Time Complexity: O(N), where N is the total number of nodes in the subtree.
  */
 bool is23(Node *root) {
@@ -60,7 +59,7 @@ bool is23(Node *root) {
 }
 
 /**
- * @brief Performs a 3-check validation of the red-black tree invariants into the given tree.
+ * @brief Performs a 3-check validation of the red-black tree invariants into the given RBT.
  * The composite checks verifies the following structural and logical properties:
  * - Binary Search Tree (BST) property: Keys are correctly ordered.
  * - Balance property: Uniform black-height across all paths.
@@ -72,9 +71,6 @@ bool is23(Node *root) {
  */
 bool check(Node *root) {
     if (root == Node::nil) return true; // Safety check for nil root.
-    if (!isBST(root)) std::cout << "Is not BST" << std::endl; 
-    if (!isBalanced(root)) std::cout << "Is not balanced" << std::endl;
-    if (!is23(root)) std::cout << "Is not 2-3" << std::endl;
     return isBST(root) && isBalanced(root) && is23(root);
 }
 
@@ -135,7 +131,7 @@ protected:
 };
 
 /* Join Fixture. */
-class JoinTreeTest : public ::testing::Test {
+class JoinTreeDifferentHeightsTest : public ::testing::Test {
 protected:
     Node* leftTree;
     Node* x; 
@@ -148,7 +144,7 @@ protected:
     int keys[11] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11}; 
 
     void SetUp() override {
-        leftTree =  Node::nil;
+        leftTree = Node::nil;
         for (int i = 0; i < 3; i++)
             leftTree = insert(leftTree, keys_l[i]); 
 
@@ -160,13 +156,49 @@ protected:
 
         mergedTree = Node::nil;
 
-        // Invariant check before each test.
-        EXPECT_TRUE(check(leftTree)) << "Left tree invariants failed on SetUp!"; ;
-        EXPECT_TRUE(check(rightTree)) << "Right tree invariants failed on SetUp!"; ;
+        // Validação dos invariantes antes de cada teste
+        EXPECT_TRUE(check(leftTree)) << "Left tree invariants failed on SetUp!";
+        EXPECT_TRUE(check(rightTree)) << "Right tree invariants failed on SetUp!";
     }
 
     void TearDown() override {
-        // Check the resulting joined tree
+        if (mergedTree != Node::nil) {
+            EXPECT_TRUE(check(mergedTree)) << "Merged tree invariants failed after Join!";
+        }
+    }
+};
+
+class JoinTreeSameHeightTest : public ::testing::Test {
+protected:
+    Node* leftTree;
+    Node* x; 
+    Node* rightTree;
+    Node* mergedTree;
+
+    int keys_l[3] = {1, 2, 3}; 
+    int key_m = 4; 
+    int keys_r[3] = {5, 6, 7};
+    int keys[7] = {1, 2, 3, 4, 5, 6, 7}; 
+
+    void SetUp() override {
+        leftTree = Node::nil;
+        for (int i = 0; i < 3; i++)
+            leftTree = insert(leftTree, keys_l[i]); 
+
+        x = newNode(key_m); 
+
+        rightTree = Node::nil;
+        for (int i = 0; i < 3; i++)
+            rightTree = insert(rightTree, keys_r[i]); 
+
+        mergedTree = Node::nil;
+
+        // Validação dos invariantes antes de cada teste
+        EXPECT_TRUE(check(leftTree)) << "Left tree invariants failed on SetUp!";
+        EXPECT_TRUE(check(rightTree)) << "Right tree invariants failed on SetUp!";
+    }
+
+    void TearDown() override {
         if (mergedTree != Node::nil) {
             EXPECT_TRUE(check(mergedTree)) << "Merged tree invariants failed after Join!";
         }
@@ -285,20 +317,36 @@ TEST_F(RedBlackTreeTest, deleteMaxValue1) {
  * Split Operations Tests
  **************************************************************/
 
-TEST_F(SplitTreeTest, SplitMiddleSuccessfully) {
-    // Splits at a middle value (7)
+TEST_F(SplitTreeTest, SplitNotRootSuccessfully) {
+    // Splits at value (7)
     auto [lTree, splitNode, rTree] = split(root, 7);
     resultLeft = lTree;
     resultRight = rTree;
 
     auto [leftNode, _1] = search(resultLeft, 5);
     auto [rightNode, _2] = search(resultRight, 10);
-    auto [notFoundRight, _3] = search(resultRight, 5); // Should not be in right tree
+    auto [notFoundRight, _3] = search(resultRight, 5); 
 
     EXPECT_NE(leftNode, Node::nil);
     EXPECT_EQ(splitNode->key, 7);
     EXPECT_NE(rightNode, Node::nil);
     EXPECT_EQ(notFoundRight, Node::nil);
+}
+
+TEST_F(SplitTreeTest, SplitRootSuccessfully) {
+    // Splits at value (5)
+    auto [lTree, splitNode, rTree] = split(root, 5);
+    resultLeft = lTree;
+    resultRight = rTree;
+
+    auto [NotFoundleft, _1] = search(resultLeft, 5);
+    auto [foundLeft, _2] = search(resultLeft, 4); 
+    auto [rightNode, _3] = search(resultRight, 7);
+
+    EXPECT_EQ(NotFoundleft, Node::nil);
+    EXPECT_EQ(splitNode->key, 5);
+    EXPECT_NE(rightNode, Node::nil);
+    EXPECT_NE(foundLeft, Node::nil);
 }
 
 TEST_F(SplitTreeTest, SplitAtMinimumNode) {
@@ -330,16 +378,31 @@ TEST_F(SplitTreeTest, SplitAtMaximumNode) {
 /**************************************************************
  * Join Operations Tests
  **************************************************************/
-
-TEST_F(JoinTreeTest, JoinSuccess) {
-    // Standard join of two valid trees and a middle node
+TEST_F(JoinTreeSameHeightTest, JoinAtRootSuccessfully) {
     mergedTree = join(leftTree, x, rightTree);
 
-    for (int i = 0; i < 11; i++) 
-        EXPECT_EQ(search(mergedTree, keys[i]).first->key, keys[i]);
+    EXPECT_EQ(mergedTree->key, key_m);
+
+    for (int i = 0; i < 7; i++) {
+        auto [node, _] = search(mergedTree, keys[i]);
+        EXPECT_NE(node, Node::nil);
+        EXPECT_EQ(node->key, keys[i]);
+    }
 }
 
-TEST_F(JoinTreeTest, JoinWithEmptyLeftTree) {
+TEST_F(JoinTreeDifferentHeightsTest, JoinNotAtRootSuccessfully) {
+    mergedTree = join(leftTree, x, rightTree);
+
+    EXPECT_NE(mergedTree->key, key_m);
+
+    for (int i = 0; i < 11; i++) {
+        auto [node, _] = search(mergedTree, keys[i]);
+        EXPECT_NE(node, Node::nil);
+        EXPECT_EQ(node->key, keys[i]);
+    }
+}
+
+TEST_F(JoinTreeDifferentHeightsTest, JoinWithEmptyLeftTree) {
     // Corner Case, left tree is empty
     Node* emptyLeft = Node::nil;
     mergedTree = join(emptyLeft, x, rightTree);
@@ -348,7 +411,7 @@ TEST_F(JoinTreeTest, JoinWithEmptyLeftTree) {
         EXPECT_EQ(search(mergedTree, i + 4).first->key, i + 4);
 }
 
-TEST_F(JoinTreeTest, JoinWithEmptyRightTree) {
+TEST_F(JoinTreeDifferentHeightsTest, JoinWithEmptyRightTree) {
     // Corner Case, right tree is empty
     Node* emptyRight = Node::nil;
     mergedTree = join(leftTree, x, emptyRight);
@@ -357,7 +420,7 @@ TEST_F(JoinTreeTest, JoinWithEmptyRightTree) {
 
 }
 
-TEST_F(JoinTreeTest, JoinBothTreesEmpty) {
+TEST_F(JoinTreeDifferentHeightsTest, JoinBothTreesEmpty) {
     // Corner Case, both trees are empty, joining just the 'x' node
     Node* emptyLeft = Node::nil;
     Node* emptyRight = Node::nil;

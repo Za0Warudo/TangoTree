@@ -39,18 +39,34 @@ void showRec(Node *root, int indent = 0);
  * @return A pointer to the root of the constructed Tango Tree.
  */
 Node *buildTango(int l, int r, int depth = 0) {
-  if (l > r)
-    return Node::nil;
-  int m = l + (r - l) / 2;
-  Node *left = buildTango(l, m - 1, depth + 1);
-  Node *right = buildTango(m + 1, r, depth + 1);
-  Node *middle = newNode(m, depth);
-  middle->left = left;
-  middle->right = right;
-  middle->depth = middle->minDepth = middle->maxDepth = depth;
-  middle->isExternal = true;
-  middle->blackHeight = -1;
-  return middle;
+    if (l > r)
+        return Node::nil;
+
+    int n = r - l + 1; 
+
+    // Calculate the greatest 2 power less than or equal to n: p = 2^(floor(log2(n)))
+    int p = 1;
+    while (p * 2 <= n) p <<= 1;
+    int s = n - (p - 1); 
+    int m;
+
+    if (s > p / 2) {
+        m = l + p - 1;
+    } else {
+        m = l + (p / 2) - 1 + s;
+    }
+
+    Node *left = buildTango(l, m - 1, depth + 1);
+    Node *right = buildTango(m + 1, r, depth + 1);
+    Node *middle = newNode(m, depth);
+    middle->left = left;
+    middle->right = right;
+    middle->depth = depth;
+    middle->minDepth = depth;
+    middle->maxDepth = depth;
+    middle->isExternal = true;
+    middle->blackHeight = -1;
+    return middle;
 }
 
 /**

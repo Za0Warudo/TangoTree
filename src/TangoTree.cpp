@@ -269,6 +269,12 @@ TangoTree::TangoTree(int n) {
   root = buildTango(1, n);
   root->isExternal = false;
   root->blackHeight = 0;
+  size = n;
+}
+
+/* Get Size. */
+int TangoTree::getSize() {
+  return size;
 }
 
 /* Show. */

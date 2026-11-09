@@ -66,7 +66,7 @@ int main() {
       // Contains.
       std::cin >> id >> val;
       Node *tree = (trees.count(id) > 0) ? trees[id] : Node::nil;
-      bool found = (search(tree, val).first != Node::nil);
+      bool found = (search(tree, val)!= Node::nil);
       std::cout << (found ? "True" : "False") << std::endl;
       break;
     }

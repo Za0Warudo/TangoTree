@@ -1,78 +1,10 @@
-#include <gtest/gtest.h>
-#include <climits>
 #include "RedBlackTree.h"
-
-/**************************************************************
- * Functions for testing and debugging.
- **************************************************************/
-
-/**
- * @brief Validates if the given RBT is a BST.
- * Ensures that for every node:
- * - All keys in the left subtree are strictly less than the node's key.
- * - All keys in the right subtree are strictly greater than the node's key.
- *
- * @param root The tree root.
- * @param min The lower bound for the current node's key.
- * @param max The upper bound for the current node's key.
- * @return True, if the subtree is a valid BST; false, otherwise.
- * @note Time Complexity: O(N), where N is the number of nodes in the tree.
- */
-bool isBST(Node *root, int min = INT_MIN, int max = INT_MAX) {
-    if (root->isExternal) return true;
-    if (root->key < min || root->key > max) return false;
-    return isBST(root->left, min, root->key) && isBST(root->right, root->key, max);
-}
-
-/**
- * @brief Verifies if the given RBT is a balanced tree.
- * A subtree is considered balanced if every path from the current root, disconsidering itself,
- * to NIL contains the same number of black nodes.
- *
- * @param root The tree root.
- * @return True, if the black height is consistent across all paths; false, otherwise.
- * @note Time Complexity: O(N), where N is the number of nodes in the subtree.
- */
-bool isBalanced(Node *root) {
-    if (root->isExternal) return true;
-    if (root->left->blackHeight + (root->left->color == BLACK? 1 : 0) != root->right->blackHeight + 1) return false;
-    return isBalanced(root->left) && isBalanced(root->right);
-}
-
-/**
- * @brief Validates the 2-3 tree structural invariants in the given RBT.
- * A valid LLRBT tree must satisfy two conditions:
- * - No right-leaning red links (all red links must be left children).
- * - No two consecutive red links in any path (no "4-node" violations).
- *
- * @param root The tree root.
- * @return True, if the subtree satisfies all LLRBT properties; false, otherwise.
- * @note Time Complexity: O(N), where N is the total number of nodes in the subtree.
- */
-bool is23(Node *root) {
-    if (root->isExternal) return true;
-    if ((root->color == RED && root->left->color == RED) || 
-        root->right->color == RED) {
-        return false;
-    }
-    return is23(root->left) && is23(root->right);
-}
-
-/**
- * @brief Performs a 3-check validation of the red-black tree invariants into the given RBT.
- * The composite checks verifies the following structural and logical properties:
- * - Binary Search Tree (BST) property: Keys are correctly ordered.
- * - Balance property: Uniform black-height across all paths.
- * - 2-3 Tree (LLRBT) property: No right-leaning red links or consecutive red links.
- *
- * @param root The tree root.
- * @return true, if all RBT invariants are satisfied; false, otherwise.
- * @note Time Complexity: O(N), where N is the total number of nodes in the tree.
- */
-bool check(Node *root) {
-    if (root == Node::nil) return true; // Safety check for nil root.
-    return isBST(root) && isBalanced(root) && is23(root);
-}
+#include "Checkers.h"
+#include "Helpers.h"
+#include <algorithm>
+#include <gtest/gtest.h>
+#include <numeric>
+#include <vector>
 
 /**************************************************************
  * Test Fixtures.
@@ -81,352 +13,633 @@ bool check(Node *root) {
 /* Generic fixture. */
 class RedBlackTreeTest : public ::testing::Test {
 protected:
-    Node* root; 
+  Node *root;
 
-    int n = 5; 
-    int keys[5] = {4, 5, 7, 10, 15}; 
+  int n = 5;
+  int initialKeys[5] = {4, 5, 7, 10, 15};
 
-    void SetUp() override {
-        root = Node::nil;
-        for (int i = 0; i < n; i++)
-            root = insert(root, keys[i]); 
+  void SetUp() override {
+    root = Node::nil;
+    for (int i = 0; i < n; i++)
+      root = insert(root, initialKeys[i]);
 
-        // Invariant check before each test.
-        EXPECT_TRUE(check(root)) << "Invariants failed on SetUp!";
-    }
+    // Invariant check before each test.
+    EXPECT_TRUE(check(root)) << "Invariants failed on SetUp!";
+  }
 
-    void TearDown() override {
-        // Invariant check after each test.
-        EXPECT_TRUE(check(root)) << "Invariants failed after test execution!";
-    }
-}; 
+  void TearDown() override {
+    // Invariant check after each test.
+    EXPECT_TRUE(check(root)) << "Invariants failed after test execution!";
+  }
+};
 
 /* Split Fixture. */
 class SplitTreeTest : public ::testing::Test {
 protected:
-    Node* root;
-    Node* resultLeft;
-    Node* resultRight;
+  Node *root;
+  Node *resultLeft;
+  Node *resultRight;
 
-    int n = 5; 
-    int keys[5] = {4, 5, 7, 10, 15}; 
+  int n = 5;
+  int initialKeys[5] = {4, 5, 7, 10, 15};
 
-    void SetUp() override {
-        root = Node::nil;
-        for (int i = 0; i < n; i++)
-            root = insert(root, keys[i]); 
-        
-        resultLeft = Node::nil;
-        resultRight = Node::nil;
+  void SetUp() override {
+    // create tree.
+    root = Node::nil;
+    for (int i = 0; i < n; i++)
+      root = insert(root, initialKeys[i]);
 
-        // Invariant check before each test.
-        EXPECT_TRUE(check(root)) << "Invariants failed on SetUp!"; 
-    }
+    resultLeft = Node::nil;
+    resultRight = Node::nil;
 
-    void TearDown() override {
-        // Check the resulting split trees. 
-        EXPECT_TRUE(check(resultLeft)) << "Left tree invariants failed after Split!";
-        EXPECT_TRUE(check(resultRight)) << "Right tree invariants failed after Split!";
-    }
+    // Invariant check before each test.
+    EXPECT_TRUE(check(root)) << "Invariants failed on SetUp!";
+  }
+
+  void TearDown() override {
+    // Check the resulting split trees.
+    EXPECT_TRUE(check(resultLeft)) << "Left tree invariants failed after Split!";
+    EXPECT_TRUE(check(resultRight)) << "Right tree invariants failed after Split!";
+  }
 };
 
 /* Join Fixture. */
 class JoinTreeDifferentHeightsTest : public ::testing::Test {
 protected:
-    Node* leftTree;
-    Node* x; 
-    Node* rightTree;
-    Node* mergedTree;
+  Node *leftTree;
+  Node *x;
+  Node *rightTree;
+  Node *mergedTree;
 
-    int keys_l[3] = {1, 2, 3}; 
-    int key_m = 4; 
-    int keys_r[7] = {5, 6, 7, 8, 9, 10, 11};
-    int keys[11] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11}; 
+  int keys_l[3] = {1, 2, 3};
+  int key_m = 4;
+  int keys_r[7] = {5, 6, 7, 8, 9, 10, 11};
+  int keys_result[11] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
 
-    void SetUp() override {
-        leftTree = Node::nil;
-        for (int i = 0; i < 3; i++)
-            leftTree = insert(leftTree, keys_l[i]); 
+  void SetUp() override {
+    // create left tree.
+    leftTree = Node::nil;
+    for (int i = 0; i < 3; i++)
+      leftTree = insert(leftTree, keys_l[i]);
 
-        x = newNode(key_m); 
+    // create middle node.
+    x = newNode(key_m);
 
-        rightTree = Node::nil;
-        for (int i = 0; i < 7; i++)
-            rightTree = insert(rightTree, keys_r[i]); 
+    // create right tree.
+    rightTree = Node::nil;
+    for (int i = 0; i < 7; i++)
+      rightTree = insert(rightTree, keys_r[i]);
 
-        mergedTree = Node::nil;
+    mergedTree = Node::nil;
 
-        // Validação dos invariantes antes de cada teste
-        EXPECT_TRUE(check(leftTree)) << "Left tree invariants failed on SetUp!";
-        EXPECT_TRUE(check(rightTree)) << "Right tree invariants failed on SetUp!";
-    }
+    // check invariants before each test.
+    EXPECT_TRUE(check(leftTree)) << "Left tree invariants failed on SetUp!";
+    EXPECT_TRUE(check(rightTree)) << "Right tree invariants failed on SetUp!";
+  }
 
-    void TearDown() override {
-        if (mergedTree != Node::nil) {
-            EXPECT_TRUE(check(mergedTree)) << "Merged tree invariants failed after Join!";
-        }
-    }
+  void TearDown() override {
+    if (mergedTree != Node::nil)
+      EXPECT_TRUE(check(mergedTree)) << "Merged tree invariants failed after Join!";
+  }
 };
 
 class JoinTreeSameHeightTest : public ::testing::Test {
 protected:
-    Node* leftTree;
-    Node* x; 
-    Node* rightTree;
-    Node* mergedTree;
+  Node *leftTree;
+  Node *x;
+  Node *rightTree;
+  Node *mergedTree;
 
-    int keys_l[3] = {1, 2, 3}; 
-    int key_m = 4; 
-    int keys_r[3] = {5, 6, 7};
-    int keys[7] = {1, 2, 3, 4, 5, 6, 7}; 
+  int keys_l[3] = {1, 2, 3};
+  int key_m = 4;
+  int keys_r[3] = {5, 6, 7};
+  std::vector<int> keys_result = {1, 2, 3, 4, 5, 6, 7};
 
-    void SetUp() override {
-        leftTree = Node::nil;
-        for (int i = 0; i < 3; i++)
-            leftTree = insert(leftTree, keys_l[i]); 
+  void SetUp() override {
+    // create left tree
+    leftTree = Node::nil;
+    for (int i = 0; i < 3; i++)
+      leftTree = insert(leftTree, keys_l[i]);
 
-        x = newNode(key_m); 
+    // create middle node
+    x = newNode(key_m);
 
-        rightTree = Node::nil;
-        for (int i = 0; i < 3; i++)
-            rightTree = insert(rightTree, keys_r[i]); 
+    // create right tree
+    rightTree = Node::nil;
+    for (int i = 0; i < 3; i++)
+      rightTree = insert(rightTree, keys_r[i]);
 
-        mergedTree = Node::nil;
+    mergedTree = Node::nil;
 
-        // Validação dos invariantes antes de cada teste
-        EXPECT_TRUE(check(leftTree)) << "Left tree invariants failed on SetUp!";
-        EXPECT_TRUE(check(rightTree)) << "Right tree invariants failed on SetUp!";
+    // check invariants before each test
+    EXPECT_TRUE(check(leftTree)) << "Left tree invariants failed on SetUp!";
+    EXPECT_TRUE(check(rightTree)) << "Right tree invariants failed on SetUp!";
+  }
+
+  void TearDown() override {
+    if (mergedTree != Node::nil) {
+      EXPECT_TRUE(check(mergedTree)) << "Merged tree invariants failed after Join!";
     }
-
-    void TearDown() override {
-        if (mergedTree != Node::nil) {
-            EXPECT_TRUE(check(mergedTree)) << "Merged tree invariants failed after Join!";
-        }
-    }
+  }
 };
 
+/* Depth Fixture. */
+class DepthFieldsTest : public ::testing::Test {
+protected:
+  static constexpr int n = 64;
+  Node *tree;
 
-/**************************************************************
- * Base binary serch tree operations Tests (Search, Insert, DeleteMin, DeleteMax). 
- **************************************************************/
+  static short depthOf(int key) { return (key * 7) % 31; }
 
- /* Search */
+  void SetUp() override {
+    tree = Node::nil;
+    for (int key = 0; key < n; key++)
+      tree = join(tree, newNode(key, depthOf(key)), Node::nil);
+  }
 
-TEST_F(RedBlackTreeTest, SearchSuccess1) {
-    auto [foundNode, parent] = search(root, 10);
-    EXPECT_NE(foundNode, Node::nil);
-    EXPECT_EQ(foundNode->key, 10); 
-}
-
-TEST_F(RedBlackTreeTest, SearchSuccess2) {
-    auto [foundNode, parent] = search(root, 7);
-    EXPECT_EQ(foundNode->key, 7);
-}
-
-TEST_F(RedBlackTreeTest, SearchFailure1) {
-    auto [notFoundNode, parent] = search(root, 20); 
-    EXPECT_EQ(notFoundNode, Node::nil); 
-}
-
-TEST_F(RedBlackTreeTest, SearchFailure2) {
-    auto [notFoundNode, parent] = search(root, 1); 
-    EXPECT_EQ(notFoundNode, Node::nil); 
-}
-/* Insert */
-
-TEST_F(RedBlackTreeTest, InsertNewNode1) {
-    const int newKey = 20;  
-    auto [notFoundNode, parent1] = search(root, newKey); 
-    EXPECT_EQ(notFoundNode, Node::nil);    
-    
-    root = insert(root, newKey); 
-    
-    auto [foundNode, parent2] = search(root, newKey); 
-    EXPECT_EQ(foundNode->key, newKey);  
-}
-
-TEST_F(RedBlackTreeTest, InsertNewNode2) {
-    const int newKey = 1;  
-    auto [notFoundNode, parent1] = search(root, newKey); 
-    EXPECT_EQ(notFoundNode, Node::nil); 
-
-    root = insert(root, newKey); 
-    
-    auto [foundNode, parent2] = search(root, newKey); 
-    EXPECT_EQ(foundNode->key, newKey); 
-}
-
-TEST_F(RedBlackTreeTest, ReplaceAlreadyExistingKey1) {
-    const int key = 7;  
-    auto [foundNode1, parent1] = search(root, key); 
-    EXPECT_EQ(foundNode1->key, key); 
-
-    root = insert(root, key); 
-
-    auto [foundNode2, parent2] = search(root, key); 
-    EXPECT_EQ(foundNode2->key, key); 
-}
-
-/* Min & Max */
-
-TEST_F(RedBlackTreeTest, GetMinValue1) {
-    Node* minNode = min(root);
-    EXPECT_EQ(minNode->key, 4);  
-}
-
-TEST_F(RedBlackTreeTest, GetMinValue2) {
-    Node* newRoot = newNode(1); 
-    Node* minNode = min(newRoot);
-    EXPECT_EQ(minNode->key, 1);  
-}
-
-TEST_F(RedBlackTreeTest, GetMaxValue1) {
-    Node* maxNode = max(root); 
-    EXPECT_EQ(maxNode->key, 15);
-}
-
-TEST_F(RedBlackTreeTest, GetMaxValue2) {
-    Node* newRoot = newNode(1); 
-    Node* maxNode = max(newRoot);
-    EXPECT_EQ(maxNode->key, 1);  
-}
-
-/* DeleteMin & DeleteMax */
-
-TEST_F(RedBlackTreeTest, deleteMinValue1) {
-    auto [minNode, newRoot] = deleteMin(root);
-    EXPECT_EQ(minNode->key, 4); 
-    for (int i = 0; i < n; i++) {
-        auto [node, parent] = search(newRoot, keys[i]); 
-        if (node == Node::nil) EXPECT_EQ(keys[i], 4);
-        else EXPECT_EQ(keys[i], node->key); 
+  // Checks the depth fields of every node, and the root's range against the depths of the tree's keys.
+  void expectValidDepths(Node *t) {
+    EXPECT_TRUE(check(t));
+    EXPECT_TRUE(hasValidDepths(t));
+    if (t == Node::nil)
+      return;
+    short expectedMin = SHORT_MAX;
+    short expectedMax = SHORT_MIN;
+    for (int key : keys(t)) {
+      expectedMin = std::min(expectedMin, depthOf(key));
+      expectedMax = std::max(expectedMax, depthOf(key));
     }
+    EXPECT_EQ(t->minDepth, expectedMin);
+    EXPECT_EQ(t->maxDepth, expectedMax);
+  }
+};
+
+/* External Fixture. */
+class ExternalChildTest : public ::testing::Test {
+protected:
+  Node *external;
+
+  void SetUp() override {
+    external = buildTree({10, 20, 30});     // The root is 20.
+    external->isExternal = true;
+    external->blackHeight = -1;
+    external->minDepth = external->maxDepth = 99;
+  }
+};
+
+namespace Tests {
+namespace SearchTests {
+
+TEST_F(RedBlackTreeTest, SearchSuccessValidKeyAtRoot) {
+  Node *foundNode = search(root, 10);
+  EXPECT_NE(foundNode, Node::nil);
+  EXPECT_EQ(foundNode->key, 10);
 }
 
-TEST_F(RedBlackTreeTest, deleteMaxValue1) {
-    auto [maxNode, newRoot] = deleteMax(root);
-    EXPECT_EQ(maxNode->key, 15); 
-    for (int i = 0; i < n; i++) {
-        auto [node, parent] = search(newRoot, keys[i]); 
-        if (node == Node::nil) EXPECT_EQ(keys[i], 15);
-        else EXPECT_EQ(keys[i], node->key); 
-    }
+TEST_F(RedBlackTreeTest, SearchSuccessValidKeyAtInnerNode) {
+  Node *foundNode = search(root, 5);
+  EXPECT_NE(foundNode, Node::nil);
+  EXPECT_EQ(foundNode->key, 5);
 }
 
-/**************************************************************
- * Split Operations Tests
- **************************************************************/
+TEST_F(RedBlackTreeTest, SearchSuccessValidKeyAtLeaf) {
+  Node *foundNode = search(root, 7);
+  EXPECT_EQ(foundNode->key, 7);
+}
 
-TEST_F(SplitTreeTest, SplitNotRootSuccessfully) {
-    // Splits at value (7)
-    auto [lTree, splitNode, rTree] = split(root, 7);
-    resultLeft = lTree;
-    resultRight = rTree;
+TEST_F(RedBlackTreeTest, SearchFailureExternalNode) {
+  Node *notFoundNode = search(root, 20);
+  EXPECT_EQ(notFoundNode, Node::nil);
+}
 
-    auto [leftNode, _1] = search(resultLeft, 5);
-    auto [rightNode, _2] = search(resultRight, 10);
-    auto [notFoundRight, _3] = search(resultRight, 5); 
+TEST_F(RedBlackTreeTest, SearchFailureEmptyTree) {
+  Node *notFoundNode = search(Node::nil, 1);
+  EXPECT_EQ(notFoundNode, Node::nil);
+}
 
-    EXPECT_NE(leftNode, Node::nil);
-    EXPECT_EQ(splitNode->key, 7);
-    EXPECT_NE(rightNode, Node::nil);
-    EXPECT_EQ(notFoundRight, Node::nil);
+}     // namespace SearchTests
+
+namespace ParentSearchTests {
+
+TEST_F(RedBlackTreeTest, ParentSearchSuccessInnerNode) {
+  Node *parent = parentSearch(root, 7);
+  EXPECT_NE(parent, Node::nil);
+  EXPECT_EQ(parent->key, 5);
+}
+
+TEST_F(RedBlackTreeTest, ParentSearchSuccessExternalNode) {
+  Node *parent = parentSearch(root, 2);
+  EXPECT_NE(parent, Node::nil);
+  EXPECT_EQ(parent->key, 4);
+}
+
+TEST_F(RedBlackTreeTest, ParentSearchFailureRootSearch) {
+  Node *parent = parentSearch(root, 10);
+  EXPECT_EQ(parent, Node::nil);
+}
+
+TEST_F(RedBlackTreeTest, ParentSearchFailureEmptyTree) {
+  Node *parent = parentSearch(Node::nil, 1);
+  EXPECT_EQ(parent, Node::nil);
+}
+
+}     // namespace ParentSearchTests
+
+namespace InsertTests {
+
+TEST_F(RedBlackTreeTest, InsertNewNodeGreaterThanMaxKey) {
+  const int newKey = 20;
+  Node *notFoundNode = search(root, newKey);
+  EXPECT_EQ(notFoundNode, Node::nil);
+
+  root = insert(root, newKey);
+
+  Node *foundNode = search(root, newKey);
+  EXPECT_EQ(foundNode->key, newKey);
+}
+
+TEST_F(RedBlackTreeTest, InsertNewNodeSmallerThanMinKey) {
+  const int newKey = 1;
+  Node *notFoundNode = search(root, newKey);
+  EXPECT_EQ(notFoundNode, Node::nil);
+
+  root = insert(root, newKey);
+
+  Node *foundNode = search(root, newKey);
+  EXPECT_EQ(foundNode->key, newKey);
+}
+
+TEST_F(RedBlackTreeTest, InsertNewNodeInMiddle) {
+  const int newKey = 6;
+  Node *notFoundNode = search(root, newKey);
+  EXPECT_EQ(notFoundNode, Node::nil);
+
+  root = insert(root, newKey);
+
+  Node *foundNode = search(root, newKey);
+  EXPECT_EQ(foundNode->key, newKey);
+}
+
+TEST_F(RedBlackTreeTest, InsertExistingKeyKeepsTreeUnchanged) {
+  const std::vector<int> expected = {4, 5, 7, 10, 15};
+  for (int i = 0; i < n; i++) {
+    root = insert(root, initialKeys[i]);
+    EXPECT_EQ(keys(root), expected);
+    EXPECT_TRUE(check(root));
+  }
+}
+
+}     // namespace InsertTests
+
+namespace MinTests {
+
+TEST_F(RedBlackTreeTest, GetMinValueMoreThanOneNode) {
+  Node *minNode = min(root);
+  EXPECT_EQ(minNode->key, 4);
+}
+
+TEST_F(RedBlackTreeTest, GetMinValueSingleNode) {
+  Node *newRoot = newNode(1);
+  Node *minNode = min(newRoot);
+  EXPECT_EQ(minNode->key, 1);
+}
+
+/**
+ * @note a min function call over an empty tree is not defined, so we don't test it here.
+ */
+
+}     // namespace MinTests
+
+namespace MaxTests {
+
+TEST_F(RedBlackTreeTest, GetMaxValueMoreThanOneNode) {
+  Node *maxNode = max(root);
+  EXPECT_EQ(maxNode->key, 15);
+}
+
+TEST_F(RedBlackTreeTest, GetMaxValueSingleNode) {
+  Node *newRoot = newNode(1);
+  Node *maxNode = max(newRoot);
+  EXPECT_EQ(maxNode->key, 1);
+}
+
+/**
+ * @note a max function call over an empty tree is not defined, so we don't test it here.
+ */
+
+}     // namespace MaxTests
+
+namespace DeleteMinTests {
+
+TEST_F(RedBlackTreeTest, DeleteMinRemovesSmallestKey) {
+  auto [minNode, newRoot] = deleteMin(root);
+  root = newRoot;     // TearDown validates the new tree.
+  EXPECT_EQ(minNode->key, 4);
+  EXPECT_EQ(keys(root), (std::vector<int>{5, 7, 10, 15}));
+}
+
+TEST_F(RedBlackTreeTest, DeleteMinUntilEmpty) {
+  const int size = 100;
+  std::vector<int> expected(size);
+  std::iota(expected.begin(), expected.end(), 0);
+
+  Node *tree = buildTree(shuffledRange(size));
+  for (int key = 0; key < size; key++) {
+    auto [minNode, newTree] = deleteMin(tree);
+    tree = newTree;
+    expected.erase(expected.begin());
+
+    ASSERT_EQ(minNode->key, key);
+    ASSERT_TRUE(check(tree)) << "Invariants failed after deleting key " << key;
+    ASSERT_EQ(keys(tree), expected);
+  }
+  EXPECT_EQ(tree, Node::nil);
+}
+
+/**
+ * @note a deleteMin function call over an empty tree is not defined, so we don't test it here.
+ */
+
+}     // namespace DeleteMinTests
+
+namespace DeleteMaxTests {
+
+TEST_F(RedBlackTreeTest, DeleteMaxRemovesLargestKey) {
+  auto [maxNode, newRoot] = deleteMax(root);
+  root = newRoot;     // TearDown validates the new tree.
+  EXPECT_EQ(maxNode->key, 15);
+  EXPECT_EQ(keys(root), (std::vector<int>{4, 5, 7, 10}));
+}
+
+TEST_F(RedBlackTreeTest, DeleteMaxUntilEmpty) {
+  const int size = 100;
+  std::vector<int> expected(size);
+  std::iota(expected.begin(), expected.end(), 0);
+
+  Node *tree = buildTree(shuffledRange(size));
+  for (int key = size - 1; key >= 0; key--) {
+    auto [maxNode, newTree] = deleteMax(tree);
+    tree = newTree;
+    expected.pop_back();
+
+    ASSERT_EQ(maxNode->key, key);
+    ASSERT_TRUE(check(tree)) << "Invariants failed after deleting key " << key;
+    ASSERT_EQ(keys(tree), expected);
+  }
+  EXPECT_EQ(tree, Node::nil);
+}
+
+/**
+ * @note a deleteMax function call over an empty tree is not defined, so we don't test it here.
+ */
+
+}     // namespace DeleteMaxTests
+
+namespace SplitTests {
+
+TEST_F(SplitTreeTest, SplitLeftSuccessfully) {
+  // Splits at value (7), a leaf node.
+  auto [lTree, splitNode, rTree] = split(root, 7);
+  resultLeft = lTree;
+  resultRight = rTree;
+
+  EXPECT_EQ(splitNode->key, 7);
+  EXPECT_EQ(keys(resultLeft), (std::vector<int>{4, 5}));
+  EXPECT_EQ(keys(resultRight), (std::vector<int>{10, 15}));
+}
+
+TEST_F(SplitTreeTest, SplitAtInnerNodeSuccessfully) {
+  // Splits at value (5), a inner node.
+  auto [lTree, splitNode, rTree] = split(root, 5);
+  resultLeft = lTree;
+  resultRight = rTree;
+
+  EXPECT_EQ(splitNode->key, 5);
+  EXPECT_EQ(keys(resultLeft), (std::vector<int>{4}));
+  EXPECT_EQ(keys(resultRight), (std::vector<int>{7, 10, 15}));
 }
 
 TEST_F(SplitTreeTest, SplitRootSuccessfully) {
-    // Splits at value (5)
-    auto [lTree, splitNode, rTree] = split(root, 5);
-    resultLeft = lTree;
-    resultRight = rTree;
+  // Splits at value (10), the tree root.
+  ASSERT_EQ(root->key, 10);
+  auto [lTree, splitNode, rTree] = split(root, 10);
+  resultLeft = lTree;
+  resultRight = rTree;
 
-    auto [NotFoundleft, _1] = search(resultLeft, 5);
-    auto [foundLeft, _2] = search(resultLeft, 4); 
-    auto [rightNode, _3] = search(resultRight, 7);
-
-    EXPECT_EQ(NotFoundleft, Node::nil);
-    EXPECT_EQ(splitNode->key, 5);
-    EXPECT_NE(rightNode, Node::nil);
-    EXPECT_NE(foundLeft, Node::nil);
+  EXPECT_EQ(splitNode->key, 10);
+  EXPECT_EQ(keys(resultLeft), (std::vector<int>{4, 5, 7}));
+  EXPECT_EQ(keys(resultRight), (std::vector<int>{15}));
 }
 
 TEST_F(SplitTreeTest, SplitAtMinimumNode) {
-    // Splits at the lowest value (3). Left tree should be empty.
-    auto [lTree, splitNode, rTree] = split(root, 4);
-    resultLeft = lTree;
-    resultRight = rTree;
+  // Splits at the lowest value (4). Left tree should be empty.
+  auto [lTree, splitNode, rTree] = split(root, 4);
+  resultLeft = lTree;
+  resultRight = rTree;
 
-    EXPECT_EQ(resultLeft, Node::nil);
-    EXPECT_EQ(splitNode->key, 4);
-    
-    auto [rightNode, _1] = search(resultRight, 5);
-    EXPECT_NE(rightNode, Node::nil);
+  EXPECT_EQ(resultLeft, Node::nil);
+  EXPECT_EQ(splitNode->key, 4);
+  EXPECT_EQ(keys(resultRight), (std::vector<int>{5, 7, 10, 15}));
 }
 
 TEST_F(SplitTreeTest, SplitAtMaximumNode) {
-    // Splits at the highest value (15). Right tree should be empty.
-    auto [lTree, splitNode, rTree] = split(root, 15);
-    resultLeft = lTree;
-    resultRight = rTree;
+  // Splits at the highest value (15). Right tree should be empty.
+  auto [lTree, splitNode, rTree] = split(root, 15);
+  resultLeft = lTree;
+  resultRight = rTree;
 
-    EXPECT_EQ(resultRight, Node::nil);
-    EXPECT_EQ(splitNode->key, 15);
-    
-    auto [leftNode, _1] = search(resultLeft, 10);
-    EXPECT_NE(leftNode, Node::nil);
+  EXPECT_EQ(resultRight, Node::nil);
+  EXPECT_EQ(splitNode->key, 15);
+  EXPECT_EQ(keys(resultLeft), (std::vector<int>{4, 5, 7, 10}));
 }
 
-/**************************************************************
- * Join Operations Tests
- **************************************************************/
+TEST_F(SplitTreeTest, SplitAtSingleNodeTree) {
+  // Splits a tree with a single node (10). Both left and right trees should be empty.
+  Node *singleNodeTree = newNode(10);
+  auto [lTree, splitNode, rTree] = split(singleNodeTree, 10);
+  resultLeft = lTree;
+  resultRight = rTree;
+
+  EXPECT_EQ(resultLeft, Node::nil);
+  EXPECT_EQ(resultRight, Node::nil);
+  EXPECT_EQ(splitNode->key, 10);
+}
+
+/**
+ * @note a split function call must at least contain the key to split at, so we don't test it here.
+ */
+
+}     // namespace SplitTests
+
+namespace JoinTests {
+
 TEST_F(JoinTreeSameHeightTest, JoinAtRootSuccessfully) {
-    mergedTree = join(leftTree, x, rightTree);
-
-    EXPECT_EQ(mergedTree->key, key_m);
-
-    for (int i = 0; i < 7; i++) {
-        auto [node, _] = search(mergedTree, keys[i]);
-        EXPECT_NE(node, Node::nil);
-        EXPECT_EQ(node->key, keys[i]);
-    }
+  mergedTree = join(leftTree, x, rightTree);
+  EXPECT_EQ(mergedTree->key, key_m);
+  EXPECT_EQ(keys(mergedTree), keys_result);
 }
 
-TEST_F(JoinTreeDifferentHeightsTest, JoinNotAtRootSuccessfully) {
-    mergedTree = join(leftTree, x, rightTree);
+TEST_F(JoinTreeSameHeightTest, JoinWithTallerLeftTree) {
+  Node *tallLeft = buildTree({1, 2, 3, 4, 5, 6, 7});
+  Node *shortRight = buildTree({9, 10, 11});
+  ASSERT_GT(tallLeft->blackHeight, shortRight->blackHeight);
 
-    EXPECT_NE(mergedTree->key, key_m);
+  mergedTree = join(tallLeft, newNode(8), shortRight);
+  EXPECT_EQ(keys(mergedTree), (std::vector<int>{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11}));
+}
 
-    for (int i = 0; i < 11; i++) {
-        auto [node, _] = search(mergedTree, keys[i]);
-        EXPECT_NE(node, Node::nil);
-        EXPECT_EQ(node->key, keys[i]);
-    }
+TEST_F(JoinTreeSameHeightTest, JoinWithTallerRightTree) {
+  Node *shortLeft = buildTree({1, 2, 3});
+  Node *tallRight = buildTree({5, 6, 7, 8, 9, 10, 11});
+  ASSERT_LT(shortLeft->blackHeight, tallRight->blackHeight);
+
+  mergedTree = join(shortLeft, newNode(4), tallRight);
+  EXPECT_EQ(keys(mergedTree), (std::vector<int>{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11}));
 }
 
 TEST_F(JoinTreeDifferentHeightsTest, JoinWithEmptyLeftTree) {
-    // Corner Case, left tree is empty
-    Node* emptyLeft = Node::nil;
-    mergedTree = join(emptyLeft, x, rightTree);
+  // Corner Case, left tree is empty
+  Node *emptyLeft = Node::nil;
+  mergedTree = join(emptyLeft, x, rightTree);
 
-    for (int i = 0; i < 8; i++) 
-        EXPECT_EQ(search(mergedTree, i + 4).first->key, i + 4);
+  EXPECT_EQ(keys(mergedTree), (std::vector<int>{key_m, 5, 6, 7, 8, 9, 10, 11}));
 }
 
 TEST_F(JoinTreeDifferentHeightsTest, JoinWithEmptyRightTree) {
-    // Corner Case, right tree is empty
-    Node* emptyRight = Node::nil;
-    mergedTree = join(leftTree, x, emptyRight);
-    for (int i = 0; i < 4; i++) 
-        EXPECT_EQ(search(mergedTree, i + 1).first->key, i + 1);
-
+  // Corner Case, right tree is empty
+  Node *emptyRight = Node::nil;
+  mergedTree = join(leftTree, x, emptyRight);
+  EXPECT_EQ(keys(mergedTree), (std::vector<int>{1, 2, 3, 4}));
 }
 
 TEST_F(JoinTreeDifferentHeightsTest, JoinBothTreesEmpty) {
-    // Corner Case, both trees are empty, joining just the 'x' node
-    Node* emptyLeft = Node::nil;
-    Node* emptyRight = Node::nil;
-    mergedTree = join(emptyLeft, x, emptyRight);
+  // Corner Case, both trees are empty, joining just the 'x' node
+  Node *emptyLeft = Node::nil;
+  Node *emptyRight = Node::nil;
+  mergedTree = join(emptyLeft, x, emptyRight);
 
-    EXPECT_EQ(mergedTree->key, key_m);
-    EXPECT_EQ(mergedTree->left, Node::nil);
-    EXPECT_EQ(mergedTree->right, Node::nil);
+  std::vector<int> mergedKeys = keys(mergedTree);
+  EXPECT_EQ(mergedKeys.size(), 1);
+  EXPECT_EQ(mergedKeys[0], key_m);
 }
+
+/**
+ * @note a join function call must at least contain the middle node, so we don't test it here.
+ */
+
+}     // namespace JoinTests
+
+namespace SplitJoinRoundTripTests {
+
+TEST(SplitJoinRoundTripTest, SplitAtEveryKeyThenJoinRestoresTree) {
+  for (int size = 1; size <= 60; size++) {
+    const std::vector<int> shuffled = shuffledRange(size, size);
+    std::vector<int> sorted = shuffled;
+    std::sort(sorted.begin(), sorted.end());
+
+    for (int key = 0; key < size; key++) {
+      auto [left, splitNode, right] = split(buildTree(shuffled), key);
+
+      ASSERT_EQ(splitNode->key, key);
+      ASSERT_TRUE(check(left)) << "Left tree invalid. size=" << size << " key=" << key;
+      ASSERT_TRUE(check(right)) << "Right tree invalid. size=" << size << " key=" << key;
+      ASSERT_EQ(keys(left), std::vector<int>(sorted.begin(), sorted.begin() + key));
+      ASSERT_EQ(keys(right), std::vector<int>(sorted.begin() + key + 1, sorted.end()));
+
+      Node *joined = join(left, splitNode, right);
+      ASSERT_TRUE(check(joined)) << "Joined tree invalid. size=" << size << " key=" << key;
+      ASSERT_EQ(keys(joined), sorted);
+    }
+  }
+}
+
+}     // namespace SplitJoinRoundTripTests
+
+namespace DepthFieldsTests {
+
+TEST_F(DepthFieldsTest, ValidAfterJoin) { expectValidDepths(tree); }
+
+TEST_F(DepthFieldsTest, ValidAfterSplit) {
+  auto [left, splitNode, right] = split(tree, 20);
+  EXPECT_EQ(splitNode->key, 20);
+  expectValidDepths(left);
+  expectValidDepths(right);
+  expectValidDepths(splitNode);
+}
+
+TEST_F(DepthFieldsTest, ValidAfterDeleteMin) {
+  for (int i = 0; i < n; i++) {
+    auto [minNode, newTree] = deleteMin(tree);
+    tree = newTree;
+    expectValidDepths(tree);
+    expectValidDepths(minNode);
+  }
+}
+
+TEST_F(DepthFieldsTest, ValidAfterDeleteMax) {
+  for (int i = 0; i < n; i++) {
+    auto [maxNode, newTree] = deleteMax(tree);
+    tree = newTree;
+    expectValidDepths(tree);
+    expectValidDepths(maxNode);
+  }
+}
+
+}     // namespace DepthFieldsTests
+
+namespace ExternalChildTests {
+
+TEST_F(ExternalChildTest, SearchStopsAtExternalChild) {
+  Node *host = newNode(50);
+  host->left = external;
+
+  // The key 10 is inside the external tree, but search must not go past its root.
+  EXPECT_EQ(search(host, 10), external);
+  EXPECT_EQ(parentSearch(host, 10), host);
+}
+
+TEST_F(ExternalChildTest, MinStopsAtInternalChild) {
+  Node *host = newNode(50);
+  host->left = external;
+  EXPECT_EQ(min(host), host);
+}
+
+TEST_F(ExternalChildTest, MaxStopsAtInternalChild) {
+  Node *host = newNode(5);
+  host->right = external;
+  EXPECT_EQ(max(host), host);
+}
+
+TEST_F(ExternalChildTest, UpdateIgnoresExternalChild) {
+  Node *host = newNode(50, 5);
+  host->left = external;
+  update(host);
+
+  EXPECT_EQ(host->blackHeight, 0);
+  EXPECT_EQ(host->minDepth, 5);
+  EXPECT_EQ(host->maxDepth, 5);
+}
+
+TEST_F(ExternalChildTest, JoinKeepsExternalChildLinked) {
+  // Same shape as the joins in cut(), with an external tree in place of the right tree.
+  Node *merged = join(buildTree({1, 2, 3}), newNode(5), external);
+
+  EXPECT_TRUE(check(merged));
+  EXPECT_TRUE(external->isExternal);
+  EXPECT_EQ(search(merged, 5)->key, 5);
+  EXPECT_EQ(search(merged, 10), external);
+}
+
+TEST_F(ExternalChildTest, DeleteMinKeepsExternalChildLinked) {
+  Node *merged = join(buildTree({1, 2, 3}), newNode(5), external);
+
+  auto [minNode, newTree] = deleteMin(merged);
+
+  EXPECT_EQ(minNode->key, 1);
+  EXPECT_TRUE(check(newTree));
+  EXPECT_EQ(search(newTree, 10), external);
+}
+
+}     // namespace ExternalChildTests
+
+}     // namespace Tests

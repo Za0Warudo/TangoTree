@@ -33,49 +33,42 @@
  * required.
  */
 class TangoTree {
-private:
-  Node *root; // The Tango Tree's root node.
-
-  int size; // The size of the Tango Tree.
-
 public:
+  Node *root;     // The Tango Tree's root node. It is better to be a private member, but it is public for testing purposes.
+  int size;       // The size of the Tango Tree.
 
   /**
-  * @brief Construct a new Tango Tree object
-  * @param n The number of nodes in the reference tree. The constructor will build a Tango Tree based on a reference
-  * tree with n nodes (1 to n).
-  */
+   * @brief Construct a new Tango Tree object
+   * @param n The number of nodes in the reference tree. The constructor will build a Tango Tree based on a reference
+   * tree with n nodes (1 to n).
+   */
   TangoTree(int n);
 
   // Operations. //
 
   /**
-   * @brief Checks if the Tango Tree contains the given key. This operation performs a search for the specified key in
-   * the Tango Tree. The search can modify the current tree struct using the Tango operation. See search in Tango
-   * reference.
+   * @brief Searches for the given key in the Tango Tree. The search can modify the current tree struct using the Tango
+   * operation. See search in Tango reference.
+   *
+   * @param key The key to search for in the Tango Tree.
+   * @return A pointer to the node with the given key if found, or the nil node otherwise.
+   */
+  Node *search(int key);
+
+  /**
+   * @brief Checks if the Tango Tree contains the given key. This operation performs a search for the specified key, so
+   * it can also modify the current tree struct.
    *
    * @param key The key to search for in the Tango Tree.
    * @return true if the key is found in the Tango Tree, false otherwise.
    */
   bool contains(int key);
 
-  // Test Functions. // 
-
-  /**
-   * @brief Recursively collects all keys in-order from the Tango Tree in a vector.
-   */
-  std::vector<int> keys();
-
-  /**
-   * @brief Recursively collects all roots in-order from the external nodes of the Tango Tree in a vector.
-   */
-  std::vector<Node*> getAllAuxiliary(); 
-
   /**
    * @brief Gets the size of the Tango Tree.
    * @return The number of nodes in the Tango Tree.
    */
-  int getSize(); 
+  int getSize();
 
   /**
    * @brief Prints the Tango Tree in a human-readable format. This method is useful for debugging and visualization
@@ -84,4 +77,4 @@ public:
   void show();
 };
 
-#endif TANGOTREE_H
+#endif     // TANGOTREE_H

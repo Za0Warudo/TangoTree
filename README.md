@@ -50,11 +50,24 @@ This compiles the source code and the test suite.
 
 ### Running Tests
 
-Since GoogleTest is integrated via CMake, you can run the automated tests using ctest from within the build directory:
+Since GoogleTest is integrated via CMake, the tests are compiled together with the project. Run these commands from the repository root, after configuring the project. The build step recompiles anything that changed, so your latest test and source edits are always included.
 
+**Run both test files:**
 ```bash
-cd build
-ctest --output-on-failure
+cmake --build build
+(cd build && ctest --output-on-failure)
+```
+
+**Run only the red-black tree tests:**
+```bash
+cmake --build build --target RedBlackTreeTest
+./build/tests/RedBlackTreeTest
+```
+
+**Run only the tango tree tests:**
+```bash
+cmake --build build --target TangoTreeTest
+./build/tests/TangoTreeTest
 ```
 
 ### How to use it

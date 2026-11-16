@@ -23,8 +23,8 @@ void showRec(Node *root, int indent = 0);
 /* Auxiliary functions. */
 
 /**
- * @brief Recursively builds a tango tree with the keys in the range [l, r], following the shape of a complete reference tree. If the range is empty, returns the
- * nil node. Otherwise, chooses the middle key that keeps the reference tree complete and builds the left and right subtrees around it.
+ * @brief Recursively builds a tango tree with the keys in the range [l, r], following the shape of a complete reference tree. If the range is empty, returns
+ * the nil node. Otherwise, chooses the middle key that keeps the reference tree complete and builds the left and right subtrees around it.
  *
  * @param l The left bound of the range of keys.
  * @param r The right bound of the range of keys.
@@ -78,6 +78,7 @@ Node *buildTango(int l, int r, int depth = 0) {
  * @note Time Complexity: O(log(N)), where N is the number of nodes in the subtree.
  */
 int predecessor(Node *h, int depth) {
+  COUNT_NODE_ACCESS(h);
   if (!h->left->isExternal && h->left->maxDepth >= depth)
     return predecessor(h->left, depth);
   if (h->depth >= depth)
@@ -97,6 +98,7 @@ int predecessor(Node *h, int depth) {
  * @note Time Complexity: O(log(N)), where N is the number of nodes in the subtree.
  */
 int successor(Node *h, int depth) {
+  COUNT_NODE_ACCESS(h);
   if (!h->right->isExternal && h->right->maxDepth >= depth)
     return successor(h->right, depth);
   if (h->depth >= depth)
@@ -106,8 +108,8 @@ int successor(Node *h, int depth) {
 }
 
 /**
- * @brief Cuts the nodes with reference tree depth at least the given depth from the root preferred path. The removed nodes form a new auxiliary tree, which stays
- * linked below the root preferred path as an external node, so no keys are lost.
+ * @brief Cuts the nodes with reference tree depth at least the given depth from the root preferred path. The removed nodes form a new auxiliary tree, which
+ * stays linked below the root preferred path as an external node, so no keys are lost.
  *
  * @param root The tango tree root node.
  * @param depth The minimum reference tree depth of the nodes to remove.
@@ -209,8 +211,8 @@ Node *tango(Node *root, Node *q) {
 /* Debug functions. */
 
 /**
- * @brief Recursively prints the given subtree sideways, with the right subtree on top. Each node is printed with its key, whether it is external (E) or internal
- * (I), its black height, and its color.
+ * @brief Recursively prints the given subtree sideways, with the right subtree on top. Each node is printed with its key, whether it is external (E) or
+ * internal (I), its black height, and its color.
  *
  * @param root The subtree root node.
  * @param indent The indentation of the current node, in spaces.
@@ -243,15 +245,44 @@ int TangoTree::getSize() { return size; }
 /* Show. */
 void TangoTree::show() { showRec(root); }
 
+/**
+ * @brief Treats h as an internal auxiliary tree root and, if the key lies in an auxiliary tree below it, first restructures that tree recursively and then
+ * tangos it into h. Returns the new root of h's auxiliary tree, still marked internal; the caller decides whether to mark it external again.
+ * @param h The subtree root node.
+ * @param key The key to search for in the subtree.
+ * @return The new subtree root after the search and possible restructuring.
+ */
+Node *searchRecTango(Node *h, int key) {
+  if (h == Node::nil)
+    return h;
+
+  h->isExternal = false;
+  update(h);     // h may have been an external root (blackHeight == -1), so recompute its fields.
+
+  Node *q = ::search(h, key);
+  if (q == Node::nil || !q->isExternal)     // Key found in h's auxiliary tree, or not in the tree at all.
+    return h;
+
+  Node *p = parentSearch(h, key);
+  bool isLeft = p->left == q;
+
+  q = searchRecTango(q, key);
+
+  q->isExternal = true;
+  q->blackHeight = -1;
+
+  if (isLeft)
+    p->left = q;
+  else
+    p->right = q;
+
+  return tango(h, q);
+}
+
 /* Search. */
 Node *TangoTree::search(int key) {
-  Node *q = ::search(root, key);
-  while (q->isExternal && q != Node::nil) {     // Repeat until the search succeeds or fails.
-    root = tango(root, q);                      // Perform a tango operation to update the root preferred path.
-    q = ::search(root, key);                    // Update the q reference for the next iteration.
-  }
-
-  return q;
+  root = searchRecTango(root, key);
+  return ::search(root, key);
 }
 
 /* Contains. */

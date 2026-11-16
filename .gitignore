@@ -2,3 +2,7 @@ bin
 build
 Testing
 .vscode/
+tests/analysis/results/
+tests/analysis/images/ 
+tests/analysis/BEFORE_OPTIMIZATION.md
+tests/analysis/RESOURCE_ESTIMATES.md

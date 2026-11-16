@@ -34,6 +34,10 @@ Node *Node::nil = [] {
   return n;
 }();     // Initialize the nil node.
 
+#ifdef COUNT_NODE_ACCESSES
+long long nodeAccessCount = 0;
+#endif
+
 /* Headers of auxiliary functions. */
 
 Node *balance(Node *h);
@@ -67,6 +71,7 @@ Node *newNode(int key, int depth) {
  * @note Time Complexity: O(log(N)), where N is the number of nodes in the subtree.
  */
 Node *searchRec(Node *h, int key) {
+  COUNT_NODE_ACCESS(h);
   if (h->isExternal || h->key == key)
     return h;
   if (key < h->key)
@@ -91,6 +96,7 @@ Node *search(Node *h, int key) { return searchRec(h, key); }
  * @note Time Complexity: O(log(N)), where N is the number of nodes in the subtree.
  */
 Node *parentSearchRec(Node *h, int key, Node *parent = Node::nil) {
+  COUNT_NODE_ACCESS(h);
   if (h->isExternal || h->key == key)
     return parent;
   if (key < h->key)
@@ -115,6 +121,7 @@ Node *parentSearch(Node *h, int key) { return parentSearchRec(h, key); }
  * @note Time Complexity: O(log(N)), where N is the number of nodes in the subtree.
  */
 Node *insertRec(Node *h, int key) {
+  COUNT_NODE_ACCESS(h);
   if (h->isExternal)
     return newNode(key);
   if (key < h->key)
@@ -150,13 +157,16 @@ Node *insert(Node *root, int key) {
  */
 Node *joinRec(Node *leftTree, Node *x, Node *rightTree) {
   if (leftTree->blackHeight > rightTree->blackHeight) {
+    COUNT_NODE_ACCESS(leftTree);
     leftTree->right = joinRec(leftTree->right, x, rightTree);
     return balance(leftTree);
   }
   if (leftTree->blackHeight < rightTree->blackHeight) {
-    rightTree->left = joinRec(leftTree, x, rightTree->left);
+    COUNT_NODE_ACCESS(rightTree);
+    rightTree->left = joinRec(leftTree, x, rightTree->left); 
     return balance(rightTree);
   }
+  COUNT_NODE_ACCESS(x);
   x->left = leftTree;
   x->right = rightTree;
   x->color = RED;
@@ -187,6 +197,7 @@ Node *join(Node *leftTree, Node *x, Node *rightTree) {
  * @note Time Complexity: O(log(N)), where N is the number of nodes in the subtree.
  */
 std::tuple<Node *, Node *, Node *> splitRec(Node *h, int key) {
+  COUNT_NODE_ACCESS(h);
   if (key < h->key) {
     auto [left, x, right] = splitRec(h->left, key);
     return {left, x, join(right, h, h->right)};
@@ -222,6 +233,7 @@ std::tuple<Node *, Node *, Node *> split(Node *h, int key) {
  * @note Time Complexity: O(log(N)), where N is the number of nodes in the subtree.
  */
 std::pair<Node *, Node *> deleteMinRec(Node *h) {
+  COUNT_NODE_ACCESS(h);
   if (h->left->isExternal)
     return {h, h->right};     // If the left child of h is external, then h is the minimum node, so we return its right child as the new subtree root.
   if (h->left->color == BLACK && h->left->left->color == BLACK)
@@ -254,6 +266,7 @@ std::pair<Node *, Node *> deleteMin(Node *root) {
  * @note Time Complexity: O(log(N)), where N is the number of nodes in the subtree.
  */
 std::pair<Node *, Node *> deleteMaxRec(Node *h) {
+  COUNT_NODE_ACCESS(h);
   if (!h->left->isExternal && h->left->color == RED)
     h = rotateRight(h);
   if (h->right->isExternal)
@@ -277,8 +290,11 @@ std::pair<Node *, Node *> deleteMax(Node *root) {
 /* Min. */
 
 Node *min(Node *root) {
-  while (!root->left->isExternal)
+  COUNT_NODE_ACCESS(root);
+  while (!root->left->isExternal) {
     root = root->left;
+    COUNT_NODE_ACCESS(root);
+  }
 
   return root;
 }
@@ -286,8 +302,11 @@ Node *min(Node *root) {
 /* Max. */
 
 Node *max(Node *root) {
-  while (!root->right->isExternal)
+  COUNT_NODE_ACCESS(root);
+  while (!root->right->isExternal) {
     root = root->right;
+    COUNT_NODE_ACCESS(root);
+  }
 
   return root;
 }

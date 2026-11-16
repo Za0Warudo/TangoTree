@@ -10,3 +10,6 @@ target_link_libraries(TangoTreeTest PRIVATE gtest_main TangoTree)
 
 add_test(NAME RedBlackTreeTest COMMAND RedBlackTreeTest)
 add_test(NAME TangoTreeTest COMMAND TangoTreeTest)
+
+# Speed comparison between the trees. See tests/analysis/compare_trees.py.
+add_subdirectory(analysis)

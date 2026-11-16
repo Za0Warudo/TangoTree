@@ -40,6 +40,20 @@
 #define SHORT_MIN (short)-32768     // minimum short number value.
 
 /**
+ * @brief Counts a visit to the given node, when the code is compiled with COUNT_NODE_ACCESSES. Without that definition it does nothing, so normal builds pay no
+ * cost for it.
+ *
+ * @note A visit is each step of a traversal that moves to a node. The nil node is not counted, and neither are the rotations and field updates done at a node
+ * that was already visited.
+ */
+#ifdef COUNT_NODE_ACCESSES
+extern long long nodeAccessCount;     // The number of node visits so far.
+#define COUNT_NODE_ACCESS(node) (nodeAccessCount += (node) != Node::nil)
+#else
+#define COUNT_NODE_ACCESS(node)
+#endif
+
+/**
  * @brief Enum to encode the color of a node in the red-black tree. A node color can be either RED or BLACK.
  *
  * @note Using a boolean would improve memory efficiency; however, we opted for an enum to ensure the code remains readable and self-explanatory.

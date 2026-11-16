@@ -6,3 +6,4 @@ tests/analysis/results/
 tests/analysis/images/ 
 tests/analysis/BEFORE_OPTIMIZATION.md
 tests/analysis/RESOURCE_ESTIMATES.md
+tests/analysis/__pycache__/

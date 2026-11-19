@@ -33,13 +33,16 @@ Before building the project, ensure you have the following installed:
 
 * Python 3 (optional): Required only to run the performance analysis. Its charts also need matplotlib, for example `sudo apt install python3-matplotlib`.
 
+* Emscripten (optional): Required only to rebuild the [visualization](#visualization) after changing the C++ code. To open the visualization, a web browser is enough.
+
 ## Project Structure
 
 | Path | Contents |
 |---|---|
-| `includes/` | The headers of the red-black tree (`RedBlackTree.h`) and the Tango Tree (`TangoTree.h`). |
-| `src/` | Their implementations, built as the `RedBlackTree` and `TangoTree` libraries. |
-| `main/` | Two interactive programs: `MainTT` for the Tango Tree and `MainRBT` for the red-black tree. |
+| `includes/` | The headers of the red-black tree (`RedBlackTree.h`), the Tango Tree (`TangoTree.h`), and the Tango Tree copy that records its steps (`TangoVisualization.h`). |
+| `src/` | Their implementations, built as the `RedBlackTree`, `TangoTree` and `TangoVisualization` libraries. |
+| `main/` | Three interactive programs: `MainTT` for the Tango Tree, `MainRBT` for the red-black tree, and `MainTV` for the visualization. |
+| `visualization/` | The page that shows a search as an animation: `index.html`, `viewer.js`, and `tango.js`, which is `MainTV` compiled to WebAssembly. |
 | `tests/unit/` | The GoogleTest unit tests, and the shared `Checkers.h` and `Helpers.h`. |
 | `tests/analysis/` | The performance comparison: the benchmark, a splay tree used as a baseline, the comparison script. |
 
@@ -64,11 +67,11 @@ This compiles the source code and the test suite.
     cmake --build build
     ```
 
-### Running Tests
+### Running Unit Tests
 
 Since GoogleTest is integrated via CMake, the tests are compiled together with the project. Run these commands from the repository root, after configuring the project. The build step recompiles anything that changed, so your latest test and source edits are always included.
 
-**Run both test files:**
+**Run all the test files:**
 ```bash
 cmake --build build
 (cd build && ctest --output-on-failure)
@@ -86,9 +89,15 @@ cmake --build build --target TangoTreeTest
 ./build/tests/TangoTreeTest
 ```
 
+**Run only the visualization tests:**
+```bash
+cmake --build build --target TangoVisualizationTest
+./build/tests/TangoVisualizationTest
+```
+
 ### How to use it
 
-The build creates two interactive programs in `build/main`. Both read from the standard input, so you can type the commands or redirect a file.
+The build creates three interactive programs in `build/main`. All of them read from the standard input, so you can type the commands or redirect a file. The third one, `MainTV`, is described in the [Visualization](#visualization) section.
 
 **Tango Tree (`MainTT`).** The first number is n: the program builds a Tango Tree with the keys 1 to n and prints it. Every following number is a key to search for, and the program answers `True` or `False`:
 
@@ -131,6 +140,110 @@ printf '0 1 1 7\n2 1 4\n2 1 9\n1 1 9\n6 1 4\n' | ./build/main/MainRBT
 * n must be at least 1. Building a tree with n = 0 changes the shared nil node and breaks every other tree in the program.
 * n must be at most 1,073,741,823 (2^30 - 1), because building the tree computes powers of 2 in an `int`.
 * The trees never free their nodes, so their memory is only released when the program ends.
+* The visualization only accepts trees with 15, 31 or 63 keys, so the picture stays readable.
+
+## Visualization
+
+The visualization shows a search step by step, as an animation. You see the current tree, choose a key, and watch the tree change until the search ends: the search going down, each cut and paste, and inside them every split, join, rotation and color change.
+
+<p align="center">
+  <img src="visualization/screenshot.png" alt="The visualization page in the middle of a search: a split has just separated the tree into three parts, drawn side by side" width="820"/>
+  <br/>
+  <em>A search for 3 in a tree with 31 keys. A split has just separated the tree into three parts.</em>
+</p>
+
+### Opening it
+
+Open the file `visualization/index.html` in a web browser. It needs no server and no installation, because the tree is already compiled to WebAssembly in `visualization/tango.js`.
+
+### Using it
+
+1. Choose the number of keys: 15, 31 or 63. This builds a new tree.
+2. Click a node, or type a key and press **Search**. **Random** searches for a random key. You can also type 0 or n + 1 to see a search for a key that is not in the tree.
+3. The search starts playing by itself. Each step is described by a sentence above the tree. Above the sentence is the list of operations in progress, from the outermost to the innermost, for example `search 5 › tango 6 › paste 6 › join 4`.
+
+The controls below the tree work like a video player:
+
+| Control | Key | Effect |
+|---|---|---|
+| Play / Pause | Space | Starts or stops the animation. At the last step, it plays again from the start. |
+| ◀ and ▶ | ← and → | Goes one step back or forward. |
+| ⏮ and ⏭ | Home and End | Jumps to the first or the last step. |
+| Slider | | Jumps to any step. The colored strip above it shows what each step belongs to: blue for the search, orange for a cut, green for a paste. |
+| Speed | | Plays from 0.5 to 8 times the normal speed. |
+
+Each search continues from the tree left by the previous one. **Reset** builds a new tree.
+
+The page can also be opened with options in its address. For example, `index.html?n=31&search=9,22,3&speed=2` builds a tree with 31 keys, searches for 9 and 22, and then plays the search for 3 at double speed. Add `autoplay=0` to start paused.
+
+### Reading the picture
+
+| In the picture | Meaning |
+|---|---|
+| Black or red circle | A black or red node of a red-black tree. |
+| Thick solid link | The two nodes are in the same auxiliary tree, so they belong to the same preferred path. |
+| Thin dashed link | The lower node is the root of another auxiliary tree. |
+| Ring around a node | The node is marked as the root of an auxiliary tree. |
+| Blue glow | The node was visited by the search. |
+| Orange glow | The node is used by the current step. |
+| Green ring | The key being searched for. |
+
+The reference tree is not drawn. The option **show the depth in the reference tree** writes, below each node, its depth in the reference tree. This is the number a cut compares: a cut at depth d removes from a path the nodes with depth d or more.
+
+Two rules decide where a node is drawn:
+
+* The column of a node is its key. A node never moves sideways, only up and down. A rotation is seen as one node going up and another going down.
+* The row of a node is its depth in its tree. When a split cuts a link, the lower part rises and is drawn next to the upper part, as a separate tree. When a join puts two parts together, one of them goes down again.
+
+While the search works on an auxiliary tree that hangs below another one, that auxiliary tree is drawn without the link to its parent, one row below it. The link comes back when the search returns to the tree above.
+
+### How it works
+
+* **A copy that records its steps.** `src/TangoVisualization.cpp` has a copy of the Tango Tree and of the red-black tree operations it uses. Every function that changes the tree was copied with one extra parameter, the tracer, and one extra call after each step it takes. Nothing else was changed, so the copy is the same algorithm. The unit tests check this: after every search, the copy and the original `TangoTree` must hold exactly the same tree.
+* **Frames.** The tracer saves one frame per step: the whole tree, plus a sentence that describes the step. In the middle of a split or a join the tree is in several parts, so a frame is a forest. The tracer keeps its own record of which node is below which, because the pointers of the real nodes are not always up to date in the middle of a recursive operation: a parent only receives its new child when the recursive call returns.
+* **The page.** `main/MainTV.cpp` is compiled with Emscripten into `visualization/tango.js`. The page calls it to build a tree and to search, and receives the frames of the search as JSON. `visualization/viewer.js` places the nodes of each frame and moves them from one frame to the next. So the tree in the page is the C++ code of this repository, not a second implementation.
+
+The copy is meant for small trees: each step stores the whole tree, so a search costs O(n) memory per step.
+
+### In the terminal
+
+`MainTV` runs the same copy without a browser, and prints the steps of each search as text. The first number is n (15, 31 or 63), and every following number is a key to search for:
+
+```bash
+printf '15\n5\n' | ./build/main/MainTV
+```
+
+```
+A new tango tree with the keys 1 to 15. Every key starts as its own auxiliary tree.
+search 5 (79 steps): True
+  1. [search 5] Search for 5. Start at 8, the root of the tango tree.
+  2. [search 5] 5 is smaller than 8: go left.
+  3. [search 5] Reached 4, the root of another auxiliary tree. 5 is not on this path, so the search goes on below.
+  ...
+  79. [search 5] Done. 5 is now in the top auxiliary tree, together with every node that is above it in the reference tree.
+```
+
+With the option `--json`, it prints the frames as JSON instead, one line per search, in the format the page reads.
+
+### Rebuilding the page
+
+`visualization/tango.js` is a compiled file. After changing `src/RedBlackTree.cpp`, `src/TangoVisualization.cpp` or `main/MainTV.cpp`, build it again with [Emscripten](https://emscripten.org/docs/getting_started/downloads.html). To install Emscripten:
+
+```bash
+git clone https://github.com/emscripten-core/emsdk.git ~/emsdk
+~/emsdk/emsdk install latest
+~/emsdk/emsdk activate latest
+```
+
+Then, from the repository root:
+
+```bash
+source ~/emsdk/emsdk_env.sh
+emcmake cmake -S visualization -B build/wasm
+cmake --build build/wasm
+```
+
+This writes `visualization/tango.js`, which has the WebAssembly code inside it. The files `index.html` and `viewer.js` are not compiled, so changes to them only need the page to be reloaded. The current `tango.js` was built with Emscripten 7.0.0.
 
 ## Performance Analysis
 
@@ -444,4 +557,4 @@ You can find her other projects and more about her work on her official page: ht
 
 The Tango Tree and red-black tree implementations, including their algorithms and data structures, were developed by me and Professor Cristina Gomes, from mid-2025 to the end of 2026, without the use of AI.
 
-AI assistance was used to develop the performance analysis in `tests/analysis` (the benchmark, the splay tree baseline, and the comparison and plotting scripts), the node access counter added to the trees for that analysis, part of the unit tests and their shared helpers, and part of the documentation, including code comments and this README.
+AI assistance was used to develop the performance analysis in `tests/analysis` (the benchmark, the splay tree baseline, and the comparison and plotting scripts), the node access counter added to the trees for that analysis, the visualization (the tracer added to the Tango Tree copy in `TangoVisualization`, the `MainTV` program, the page in `visualization`, and their unit tests), part of the other unit tests and their shared helpers, and part of the documentation, including code comments and this README.

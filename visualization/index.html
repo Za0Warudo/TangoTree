@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tango Tree: step-by-step search</title>
+<style>
+  :root {
+    --bg: #f4f5f8;
+    --panel: #ffffff;
+    --ink: #1b1f27;
+    --muted: #667085;
+    --line: #dde1e8;
+    --edge: #2a2f3a;
+    --edge-weak: #9aa3b2;
+    --node-black: #252a34;
+    --node-red: #d6323e;
+    --node-stroke: transparent;
+    --focus: #f59e0b;
+    --path: #3b82f6;
+    --target: #16a34a;
+    --accent: #3257d6;
+    --phase-search: #3b82f6;
+    --phase-cut: #f59e0b;
+    --phase-paste: #16a34a;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0e1116;
+      --panel: #161a21;
+      --ink: #e7eaf0;
+      --muted: #98a2b3;
+      --line: #2a303b;
+      --edge: #d3d8e2;
+      --edge-weak: #667080;
+      --node-black: #07090c;
+      --node-red: #e5484d;
+      --node-stroke: #aab2c0;
+      --accent: #7c9cff;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    display: flex;
+    flex-direction: column;
+  }
+
+  header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 18px;
+    padding: 12px 20px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--line);
+  }
+  header h1 { margin: 0 auto 0 0; font-size: 17px; font-weight: 650; letter-spacing: .01em; }
+  header h1 span { color: var(--muted); font-weight: 400; }
+  .group { display: flex; align-items: center; gap: 6px; }
+  .group > label { color: var(--muted); font-size: 13px; }
+
+  button, input, select {
+    font: inherit;
+    color: var(--ink);
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    height: 34px;
+    padding: 0 12px;
+  }
+  button { cursor: pointer; }
+  button:hover:not(:disabled) { border-color: var(--accent); }
+  button:disabled { opacity: .45; cursor: default; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+  @media (prefers-color-scheme: dark) { button.primary { color: #0e1116; } }
+  input[type=number] { width: 74px; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .sizes { display: flex; }
+  .sizes button { border-radius: 0; margin-left: -1px; min-width: 46px; }
+  .sizes button:first-child { border-radius: 7px 0 0 7px; margin-left: 0; }
+  .sizes button:last-child { border-radius: 0 7px 7px 0; }
+  .sizes button[aria-pressed=true] { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; position: relative; }
+  @media (prefers-color-scheme: dark) { .sizes button[aria-pressed=true] { color: #0e1116; } }
+
+  #caption {
+    padding: 10px 20px 8px;
+    min-height: 92px;
+  }
+  #crumbs { display: flex; flex-wrap: wrap; gap: 4px 6px; align-items: center; min-height: 24px; font-size: 12.5px; color: var(--muted); }
+  #crumbs .crumb { padding: 1px 9px; border-radius: 99px; border: 1px solid var(--line); background: var(--panel); white-space: nowrap; }
+  #crumbs .crumb.search { border-color: var(--phase-search); color: var(--phase-search); }
+  #crumbs .crumb.cut { border-color: var(--phase-cut); color: var(--phase-cut); }
+  #crumbs .crumb.paste { border-color: var(--phase-paste); color: var(--phase-paste); }
+  #crumbs .sep { opacity: .6; }
+  #text { margin: 6px 0 0; font-size: 18px; line-height: 1.35; min-height: 2.7em; max-width: 1100px; }
+
+  #stage-wrap { flex: 1 1 auto; min-height: 300px; padding: 0 12px; display: flex; }
+  #stage { flex: 1 1 auto; width: 100%; height: 100%; display: block; user-select: none; }
+
+  .edge { stroke: var(--edge); stroke-width: 2.6; stroke-linecap: round; }
+  .edge.weak { stroke: var(--edge-weak); stroke-width: 1.5; stroke-dasharray: 5 5; }
+
+  .node { cursor: pointer; }
+  .node .disc { fill: var(--node-black); stroke: var(--node-stroke); stroke-width: 1.2; transition: fill var(--dur, 250ms) ease; }
+  .node.is-red .disc { fill: var(--node-red); }
+  .node .key { fill: #fff; font-weight: 650; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
+  .node .depth { fill: var(--muted); text-anchor: middle; dominant-baseline: hanging; pointer-events: none; display: none; }
+  .show-depth .node .depth { display: block; }
+  .node .hit { fill: transparent; }
+  .node .halo, .node .ring { opacity: 0; transition: opacity var(--dur, 250ms) ease; pointer-events: none; }
+  .node .halo.focus { fill: var(--focus); }
+  .node .halo.path { fill: var(--path); }
+  .node .ring { fill: none; }
+  .node .ring.target { stroke: var(--target); stroke-width: 2.6; }
+  .node .ring.ext { stroke: var(--edge-weak); stroke-width: 1.4; }
+  .node.is-focus .halo.focus { opacity: .5; }
+  .node.is-path .halo.path { opacity: .32; }
+  .node.is-target .ring.target { opacity: 1; }
+  .node.is-ext .ring.ext { opacity: 1; }
+  .node:hover .disc { stroke: var(--accent); stroke-width: 2.4; }
+
+  #transport {
+    display: flex;
+    align-items: center;
+    gap: 8px 12px;
+    flex-wrap: wrap;
+    padding: 8px 20px 10px;
+    background: var(--panel);
+    border-top: 1px solid var(--line);
+  }
+  #transport button { min-width: 38px; padding: 0 8px; }
+  #play { min-width: 84px !important; }
+  #timeline { flex: 1 1 260px; display: flex; flex-direction: column; gap: 3px; min-width: 200px; }
+  #phases { display: flex; height: 6px; border-radius: 3px; overflow: hidden; background: var(--line); }
+  #phases i { flex: 1 1 0; background: var(--phase-search); opacity: .35; }
+  #phases i.cut { background: var(--phase-cut); }
+  #phases i.paste { background: var(--phase-paste); }
+  #phases i.done { opacity: 1; }
+  #scrub { width: 100%; height: 18px; padding: 0; border: 0; background: transparent; accent-color: var(--accent); }
+  #counter { font-variant-numeric: tabular-nums; color: var(--muted); min-width: 76px; text-align: right; }
+
+  #legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 20px;
+    padding: 8px 20px 12px;
+    font-size: 12.5px;
+    color: var(--muted);
+    background: var(--panel);
+  }
+  #legend span { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+  #legend svg { flex: none; }
+  #legend label { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; cursor: pointer; }
+  #legend input { height: auto; }
+  #history { color: var(--muted); font-size: 13px; max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  #error { margin: 40px auto; max-width: 640px; padding: 18px 22px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); display: none; }
+  #error code { background: var(--bg); padding: 1px 5px; border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Tango Tree <span>· step-by-step search</span></h1>
+  <div class="group">
+    <label>Keys</label>
+    <div class="sizes" id="sizes" role="group" aria-label="Number of keys">
+      <button type="button" data-n="15">15</button>
+      <button type="button" data-n="31">31</button>
+      <button type="button" data-n="63">63</button>
+    </div>
+  </div>
+  <form class="group" id="search-form">
+    <label for="key">Search</label>
+    <input id="key" type="number" min="1" inputmode="numeric" placeholder="key" aria-label="Key to search for">
+    <button class="primary" type="submit">Search</button>
+    <button type="button" id="random" title="Search for a random key">Random</button>
+  </form>
+  <div class="group">
+    <span id="history" title="Keys searched so far"></span>
+    <button type="button" id="reset" title="Build a new tree">Reset</button>
+  </div>
+</header>
+
+<div id="error">
+  <strong>The tree could not be loaded.</strong>
+  <p>This page needs the file <code>tango.js</code> next to it. It is the Tango Tree compiled to WebAssembly. To build it, run these commands from the
+  repository root, with Emscripten installed:</p>
+  <p><code>emcmake cmake -S visualization -B build/wasm</code><br><code>cmake --build build/wasm</code></p>
+</div>
+
+<section id="caption" aria-live="polite">
+  <div id="crumbs"></div>
+  <p id="text">Loading…</p>
+</section>
+
+<div id="stage-wrap">
+  <svg id="stage" preserveAspectRatio="xMidYMin meet" role="img" aria-label="The tango tree">
+    <g id="edges"></g>
+    <g id="nodes"></g>
+  </svg>
+</div>
+
+<div id="transport">
+  <button type="button" id="first" title="Back to the first step (Home)">⏮</button>
+  <button type="button" id="prev" title="Previous step (←)">◀</button>
+  <button type="button" id="play" class="primary" title="Play or pause (space)">Play</button>
+  <button type="button" id="next" title="Next step (→)">▶</button>
+  <button type="button" id="last" title="Jump to the last step (End)">⏭</button>
+  <div id="timeline">
+    <div id="phases"></div>
+    <input id="scrub" type="range" min="0" max="0" value="0" aria-label="Step">
+  </div>
+  <span id="counter">0 / 0</span>
+  <div class="group">
+    <label for="speed">Speed</label>
+    <select id="speed">
+      <option value="0.5">0.5×</option>
+      <option value="1" selected>1×</option>
+      <option value="2">2×</option>
+      <option value="4">4×</option>
+      <option value="8">8×</option>
+    </select>
+  </div>
+</div>
+
+<div id="legend">
+  <span><svg width="16" height="16"><circle cx="8" cy="8" r="7" fill="var(--node-black)" stroke="var(--node-stroke)"/></svg>black node</span>
+  <span><svg width="16" height="16"><circle cx="8" cy="8" r="7" fill="var(--node-red)"/></svg>red node</span>
+  <span><svg width="26" height="10"><line x1="1" y1="5" x2="25" y2="5" stroke="var(--edge)" stroke-width="2.6"/></svg>same auxiliary tree (one preferred path)</span>
+  <span><svg width="26" height="10"><line x1="1" y1="5" x2="25" y2="5" stroke="var(--edge-weak)" stroke-width="1.5" stroke-dasharray="5 4"/></svg>link to another auxiliary tree</span>
+  <span><svg width="20" height="20"><circle cx="10" cy="10" r="9" fill="none" stroke="var(--edge-weak)" stroke-width="1.4"/><circle cx="10" cy="10" r="6" fill="var(--node-black)" stroke="var(--node-stroke)"/></svg>root of an auxiliary tree</span>
+  <span><svg width="16" height="16"><circle cx="8" cy="8" r="7" fill="var(--path)" opacity=".4"/></svg>visited by the search</span>
+  <span><svg width="16" height="16"><circle cx="8" cy="8" r="7" fill="var(--focus)" opacity=".6"/></svg>used by the current step</span>
+  <span><svg width="16" height="16"><circle cx="8" cy="8" r="6" fill="none" stroke="var(--target)" stroke-width="2.6"/></svg>searched key</span>
+  <label><input type="checkbox" id="depths"> show the depth in the reference tree</label>
+</div>
+
+<script src="tango.js"></script>
+<script src="viewer.js"></script>
+</body>
+</html>

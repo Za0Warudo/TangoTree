@@ -41,13 +41,13 @@ Before building the project, ensure you have the following installed:
 | `src/` | Their implementations, built as the `RedBlackTree` and `TangoTree` libraries. |
 | `main/` | Two interactive programs: `MainTT` for the Tango Tree and `MainRBT` for the red-black tree. |
 | `tests/unit/` | The GoogleTest unit tests, and the shared `Checkers.h` and `Helpers.h`. |
-| `tests/analysis/` | The performance comparison: the benchmark, a splay tree used as a baseline, the comparison script, and `RESOURCE_ESTIMATES.md`. |
+| `tests/analysis/` | The performance comparison: the benchmark, a splay tree used as a baseline, the comparison script. |
 
 ## Installation & Building
 
 This project uses CMake to automate the build process. Follow these steps to compile:
 
-1. **Clone the repository:**
+1. **Clone the repository (using URL):**
     ```bash
     git clone https://github.com/Za0Warudo/TangoTree.git
     cd TangoTree

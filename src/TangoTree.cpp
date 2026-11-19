@@ -198,13 +198,14 @@ Node *paste(Node *root, Node *q, Node *p) {
  * @note Precondition: q must be an external node directly below the root preferred path.
  * @note Time Complexity: O(log(N)), where N is the number of nodes in the tree.
  */
-Node *tango(Node *root, Node *q) {
+Node *tango(Node *root, Node *q, Node* p) {
   if (root->maxDepth >= q->minDepth) {
     root = cut(root, q->minDepth);     // Remove all the keys that are not in the preferred path anymore.
+    auto [pp, qq] = parentSearch(root, q->key); // Find the last node seen in the root preferred path before reaching q and q.
+    q = qq; 
+    p = pp; 
   }
-  Node *qq = search(root, q->key);
-  Node *pp = parentSearch(root, q->key);     // Find the last node seen in the root preferred path before reaching q.
-  root = paste(root, qq, pp);                // Insert the new keys into the root preferred path.
+  root = paste(root, q, p);                // Insert the new keys into the root preferred path.
   return root;
 }
 
@@ -263,7 +264,7 @@ Node *searchRecTango(Node *h, int key) {
   if (q == Node::nil || !q->isExternal)     // Key found in h's auxiliary tree, or not in the tree at all.
     return h;
 
-  Node *p = parentSearch(h, key);
+  auto [p, qq] = parentSearch(h, key);
   bool isLeft = p->left == q;
 
   q = searchRecTango(q, key);
@@ -276,7 +277,7 @@ Node *searchRecTango(Node *h, int key) {
   else
     p->right = q;
 
-  return tango(h, q);
+  return tango(h, q, p);
 }
 
 /* Search. */

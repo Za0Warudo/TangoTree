@@ -222,24 +222,24 @@ TEST_F(RedBlackTreeTest, SearchFailureEmptyTree) {
 namespace ParentSearchTests {
 
 TEST_F(RedBlackTreeTest, ParentSearchSuccessInnerNode) {
-  Node *parent = parentSearch(root, 7);
+  auto [parent, ignore] = parentSearch(root, 7);
   EXPECT_NE(parent, Node::nil);
   EXPECT_EQ(parent->key, 5);
 }
 
 TEST_F(RedBlackTreeTest, ParentSearchSuccessExternalNode) {
-  Node *parent = parentSearch(root, 2);
+  auto [parent, ignore] = parentSearch(root, 2);
   EXPECT_NE(parent, Node::nil);
   EXPECT_EQ(parent->key, 4);
 }
 
 TEST_F(RedBlackTreeTest, ParentSearchFailureRootSearch) {
-  Node *parent = parentSearch(root, 10);
+  auto [parent, ignore] = parentSearch(root, 10);
   EXPECT_EQ(parent, Node::nil);
 }
 
 TEST_F(RedBlackTreeTest, ParentSearchFailureEmptyTree) {
-  Node *parent = parentSearch(Node::nil, 1);
+  auto [parent, ignore] = parentSearch(Node::nil, 1);
   EXPECT_EQ(parent, Node::nil);
 }
 
@@ -595,7 +595,7 @@ TEST_F(ExternalChildTest, SearchStopsAtExternalChild) {
 
   // The key 10 is inside the external tree, but search must not go past its root.
   EXPECT_EQ(search(host, 10), external);
-  EXPECT_EQ(parentSearch(host, 10), host);
+  EXPECT_EQ(parentSearch(host, 10).first, host);
 }
 
 TEST_F(ExternalChildTest, MinStopsAtInternalChild) {

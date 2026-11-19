@@ -95,17 +95,17 @@ Node *search(Node *h, int key) { return searchRec(h, key); }
  *
  * @note Time Complexity: O(log(N)), where N is the number of nodes in the subtree.
  */
-Node *parentSearchRec(Node *h, int key, Node *parent = Node::nil) {
+std::pair<Node *, Node*> parentSearchRec(Node *h, int key, Node *parent = Node::nil) {
   COUNT_NODE_ACCESS(h);
   if (h->isExternal || h->key == key)
-    return parent;
+    return {parent, h};
   if (key < h->key)
     return parentSearchRec(h->left, key, h);
   else
     return parentSearchRec(h->right, key, h);
 }
 
-Node *parentSearch(Node *h, int key) { return parentSearchRec(h, key); }
+std::pair<Node *, Node*> parentSearch(Node *h, int key) { return parentSearchRec(h, key); }
 
 /* Insert. */
 

@@ -129,7 +129,7 @@ Node *search(Node *root, int key);
  * @note The parent is an external node, if and only if the tree is empty or the key is at the tree root.
  * @note Time Complexity: O(log(N)), where N is the number of nodes in the tree.
  */
-Node *parentSearch(Node *root, int key);
+std::pair<Node *, Node*> parentSearch(Node *root, int key);
 
 /**
  * @brief Inserts a key into the given red-black tree.

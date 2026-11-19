@@ -34,7 +34,7 @@ WORKLOADS = {
     "bitreversal": "Bit-reversal searches",
     "zipf": "Zipf-distributed searches",
 }
-DEFAULT_SIZES = [1023, 4095, 16383, 65535, 262143, 1048575, 4194303, 16777215]
+DEFAULT_SIZES = [1023, 4095, 16383, 65535, 262143, 1048575, 4194303, 16777215 ]
 
 # What each chart shows. "avg" and "stdev" are columns of the summary.
 METRICS = {
@@ -68,7 +68,7 @@ def parse_arguments():
     parser.add_argument("--workloads", nargs="+", choices=list(WORKLOADS), default=list(WORKLOADS), help="search patterns to run")
     parser.add_argument("--sizes", nargs="+", type=positive_int, default=DEFAULT_SIZES, metavar="N", help="numbers of keys to test")
     parser.add_argument("--queries", type=positive_int, default=100_000, help="searches per run")
-    parser.add_argument("--runs", type=positive_int, default=5, help="times to repeat each input, to take the average")
+    parser.add_argument("--runs", type=positive_int, default=10, help="times to repeat each input, to take the average")
     parser.add_argument("--output-dir", type=Path, default=REPO_ROOT / "tests" / "analysis" / "results", help="where to save the CSV files and charts")
     parser.add_argument("--build-dir", type=Path, default=REPO_ROOT / "build", help="the CMake build directory")
     return parser.parse_args()
